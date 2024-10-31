@@ -36,3 +36,19 @@
     transform: rotate(360deg);
   }
 }
+
+/* Add to existing CSS */
+button.selected {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.game-controls {
+  margin: 20px 0;
+}
+
+.game-controls button {
+  margin: 0 10px;
+  padding: 10px 20px;
+  font-size: 1.2em;
+}

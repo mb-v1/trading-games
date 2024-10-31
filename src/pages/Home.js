@@ -24,13 +24,13 @@ function Home() {
         [playerName]: {
           isHost: true,
           ready: false,
-          score: 1000  // Starting balance
+          score: 1000
         }
       },
       createdAt: Date.now()
     });
 
-    navigate(`/game/${gameId}`);
+    navigate(`/game/${gameId}`, { state: { playerName } });
   };
 
   return (
@@ -45,7 +45,9 @@ function Home() {
       <button onClick={() => createGame('coinflip')}>
         Coin Flip Challenge
       </button>
-      {/* Add more game options here */}
+      <button onClick={() => createGame('rps')}>
+        Rock Paper Scissors
+      </button>
     </div>
   );
 }
