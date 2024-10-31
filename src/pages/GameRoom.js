@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
-import { ref, onValue, update, get } from 'firebase/database';
+import { useParams, useLocation, useSearchParams } from 'react-router-dom';
+import { ref, onValue, update, get, set } from 'firebase/database';
 import { db } from '../firebase-config';
 
 function GameRoom() {
   const { gameId } = useParams();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const [game, setGame] = useState(null);
   const [playerName, setPlayerName] = useState(location.state?.playerName || '');
   const [bet, setBet] = useState(100);
@@ -17,12 +18,24 @@ function GameRoom() {
     const gameRef = ref(db, `games/${gameId}`);
     const unsubscribe = onValue(gameRef, (snapshot) => {
       const gameData = snapshot.val();
-      console.log('Game data updated:', gameData);
-      setGame(gameData);
+      if (!gameData) {
+        // If no game data exists, initialize it with the type from URL
+        const gameType = searchParams.get('type');
+        if (gameType) {
+          set(gameRef, {
+            type: gameType,
+            status: 'waiting',
+            players: {}
+          });
+        }
+      } else {
+        console.log('Game data updated:', gameData);
+        setGame(gameData);
+      }
     });
 
     return () => unsubscribe();
-  }, [gameId]);
+  }, [gameId, searchParams]);
 
   const joinGame = async () => {
     if (!playerName) {
@@ -133,6 +146,13 @@ function GameRoom() {
     return rules[player1.choice] === player2.choice ? player1.name : player2.name;
   };
 
+  const copyGameLink = () => {
+    const gameType = game.type;
+    const url = `${window.location.origin}/#/game/${gameId}?type=${gameType}`;
+    navigator.clipboard.writeText(url);
+    alert('Game link copied to clipboard!');
+  };
+
   if (!game) return <div>Loading...</div>;
 
   return (
@@ -197,6 +217,10 @@ function GameRoom() {
                 ? "It's a tie!" 
                 : `${roundResult} wins this round!`}
             </div>
+          )}
+
+          {game.players[playerName]?.isHost && (
+            <button onClick={copyGameLink}>Copy Game Link</button>
           )}
         </div>
       )}

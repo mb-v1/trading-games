@@ -30,7 +30,7 @@ function Home() {
       createdAt: Date.now()
     });
 
-    navigate(`/game/${gameId}`, { state: { playerName } });
+    navigate(`/game/${gameId}?type=${gameType}`, { state: { playerName } });
   };
 
   return (
