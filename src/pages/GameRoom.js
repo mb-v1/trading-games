@@ -12,24 +12,27 @@ function GameRoom() {
   const [bet, setBet] = useState(100);
   const [choice, setChoice] = useState('heads');
   const [rpsChoice, setRpsChoice] = useState(null);
-  const [roundResult, setRoundResult] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const gameRef = ref(db, `games/${gameId}`);
     const unsubscribe = onValue(gameRef, (snapshot) => {
       const gameData = snapshot.val();
+      setIsLoading(false);
       if (!gameData) {
-        // If no game data exists, initialize it with the type from URL
         const gameType = searchParams.get('type');
         if (gameType) {
           set(gameRef, {
             type: gameType,
             status: 'waiting',
-            players: {}
+            players: {},
+            roundResult: null,
+            lastUpdated: Date.now()
           });
+        } else {
+          console.error('Invalid game type');
         }
       } else {
-        console.log('Game data updated:', gameData);
         setGame(gameData);
       }
     });
@@ -38,27 +41,59 @@ function GameRoom() {
   }, [gameId, searchParams]);
 
   const joinGame = async () => {
-    if (!playerName) {
+    if (!playerName?.trim()) {
       alert('Please enter your name');
       return;
     }
 
-    // Check if player already exists
-    if (game.players[playerName]) {
-      return; // Player already in game
+    try {
+      const gameRef = ref(db, `games/${gameId}`);
+      const snapshot = await get(gameRef);
+      const gameData = snapshot.val();
+
+      if (!gameData) {
+        alert('Game not found');
+        return;
+      }
+
+      if (gameData.players && Object.keys(gameData.players).length >= 2) {
+        alert('Game is full');
+        return;
+      }
+
+      const updates = {
+        [`/games/${gameId}/players/${playerName}`]: {
+          isHost: false,
+          ready: false,
+          score: 1000,
+          joinedAt: Date.now()
+        },
+        [`/games/${gameId}/lastUpdated`]: Date.now()
+      };
+
+      await update(ref(db), updates);
+    } catch (error) {
+      console.error('Error joining game:', error);
+      alert('Failed to join game. Please try again.');
     }
-
-    const updates = {};
-    updates[`/games/${gameId}/players/${playerName}`] = {
-      isHost: false,
-      ready: false,
-      score: 1000
-    };
-
-    await update(ref(db), updates);
   };
 
   const playRound = async () => {
+    if (!game?.players?.[playerName]) {
+      alert('Game state error. Please rejoin.');
+      return;
+    }
+
+    if (bet <= 0) {
+      alert('Bet must be greater than 0');
+      return;
+    }
+
+    if (bet > game.players[playerName].score) {
+      alert('Insufficient coins for this bet');
+      return;
+    }
+
     const result = Math.random() < 0.5 ? 'heads' : 'tails';
     const won = choice === result;
     
@@ -74,43 +109,36 @@ function GameRoom() {
   };
 
   const playRPSRound = async () => {
+    if (!game?.players?.[playerName]) {
+      alert('Game state error. Please rejoin.');
+      return;
+    }
+
     if (!rpsChoice) {
       alert('Please make a choice!');
       return;
     }
 
-    // First update the current player's choice and ready status
     const updates = {};
     updates[`/games/${gameId}/players/${playerName}/choice`] = rpsChoice;
     updates[`/games/${gameId}/players/${playerName}/ready`] = true;
     
     try {
       await update(ref(db), updates);
-      console.log(`Updated choice for ${playerName} to ${rpsChoice}`);
       
-      // Get fresh data after update
       const gameRef = ref(db, `games/${gameId}`);
       const snapshot = await get(gameRef);
       const currentGame = snapshot.val();
       
       const allPlayers = Object.entries(currentGame.players);
-      console.log('Current game state:', currentGame);
-      console.log('All players after update:', allPlayers.map(([name, data]) => ({
-        name,
-        ready: data.ready,
-        choice: data.choice
-      })));
-
-      // Check if both players have made their choices
+      
       if (allPlayers.length === 2 && allPlayers.every(([_, data]) => data.ready && data.choice)) {
-        console.log('Both players ready, calculating result');
         const [player1, player2] = allPlayers;
         const result = determineWinner(
           { name: player1[0], choice: player1[1].choice },
           { name: player2[0], choice: player2[1].choice }
         );
         
-        // Update scores and reset choices
         const roundUpdates = {};
         if (result !== 'tie') {
           allPlayers.forEach(([player, data]) => {
@@ -120,13 +148,11 @@ function GameRoom() {
           });
         }
         
-        // Reset for next round
         allPlayers.forEach(([player]) => {
           roundUpdates[`/games/${gameId}/players/${player}/choice`] = null;
           roundUpdates[`/games/${gameId}/players/${player}/ready`] = false;
         });
         
-        setRoundResult(result);
         await update(ref(db), roundUpdates);
       }
     } catch (error) {
@@ -146,24 +172,21 @@ function GameRoom() {
     return rules[player1.choice] === player2.choice ? player1.name : player2.name;
   };
 
-  const copyGameLink = () => {
-    const gameType = game.type;
-    const url = `${window.location.origin}/#/game/${gameId}?type=${gameType}`;
-    navigator.clipboard.writeText(url);
-    alert('Game link copied to clipboard!');
-  };
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
-  if (!game) return <div>Loading...</div>;
+  if (!game) {
+    return <div>Game not found</div>;
+  }
 
   return (
-    <div>
-      <h2>Game Room: {gameId}</h2>
-      
-      {!game.players[playerName] && (
-        <div>
+    <div className="game-container">
+      {!game.players?.[playerName] && (
+        <div className="join-container">
           <input
             type="text"
-            placeholder="Enter your name to join"
+            placeholder="Enter your name"
             value={playerName}
             onChange={(e) => setPlayerName(e.target.value)}
           />
@@ -171,61 +194,7 @@ function GameRoom() {
         </div>
       )}
 
-      {game.players[playerName] && game.type === 'rps' && (
-        <div>
-          <h3>Players:</h3>
-          {Object.entries(game.players).map(([name, data]) => (
-            <div key={name}>
-              {name}: {data.score} points
-              {data.isHost && " (Host)"}
-              {data.ready && " (Ready)"}
-            </div>
-          ))}
-
-          {!game.players[playerName].ready && (
-            <div>
-              <h4>Make your choice:</h4>
-              <button 
-                onClick={() => setRpsChoice('rock')}
-                className={rpsChoice === 'rock' ? 'selected' : ''}
-              >
-                Rock ✊
-              </button>
-              <button 
-                onClick={() => setRpsChoice('paper')}
-                className={rpsChoice === 'paper' ? 'selected' : ''}
-              >
-                Paper ✋
-              </button>
-              <button 
-                onClick={() => setRpsChoice('scissors')}
-                className={rpsChoice === 'scissors' ? 'selected' : ''}
-              >
-                Scissors ✌️
-              </button>
-              <button onClick={playRPSRound}>Confirm Choice</button>
-            </div>
-          )}
-
-          {game.players[playerName].ready && (
-            <div>Waiting for other player...</div>
-          )}
-
-          {roundResult && (
-            <div>
-              {roundResult === 'tie' 
-                ? "It's a tie!" 
-                : `${roundResult} wins this round!`}
-            </div>
-          )}
-
-          {game.players[playerName]?.isHost && (
-            <button onClick={copyGameLink}>Copy Game Link</button>
-          )}
-        </div>
-      )}
-
-      {game.players[playerName] && game.type === 'coinflip' && (
+      {game.players?.[playerName] && game.type === 'coinflip' && (
         <div>
           <h3>Players:</h3>
           {Object.entries(game.players).map(([name, data]) => (
@@ -234,18 +203,40 @@ function GameRoom() {
               {data.isHost && " (Host)"}
             </div>
           ))}
-
-          <div>
+          <div className="game-controls">
             <input
               type="number"
               value={bet}
               onChange={(e) => setBet(Number(e.target.value))}
+              min="1"
             />
             <select value={choice} onChange={(e) => setChoice(e.target.value)}>
               <option value="heads">Heads</option>
               <option value="tails">Tails</option>
             </select>
-            <button onClick={playRound}>Flip Coin</button>
+            <button onClick={playRound}>Play</button>
+          </div>
+        </div>
+      )}
+
+      {game.players?.[playerName] && game.type === 'rps' && (
+        <div>
+          <h3>Players:</h3>
+          {Object.entries(game.players).map(([name, data]) => (
+            <div key={name}>
+              {name}: {data.score} points
+              {data.ready && " ✓"}
+              {data.isHost && " (Host)"}
+            </div>
+          ))}
+          <div className="game-controls">
+            <select value={rpsChoice || ''} onChange={(e) => setRpsChoice(e.target.value)}>
+              <option value="">Choose...</option>
+              <option value="rock">Rock</option>
+              <option value="paper">Paper</option>
+              <option value="scissors">Scissors</option>
+            </select>
+            <button onClick={playRPSRound}>Play</button>
           </div>
         </div>
       )}
