@@ -13,6 +13,8 @@ function GameRoom() {
   const [choice, setChoice] = useState('heads');
   const [rpsChoice, setRpsChoice] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [gameResult, setGameResult] = useState(null);
+  const [showResult, setShowResult] = useState(false);
 
   useEffect(() => {
     const gameRef = ref(db, `games/${gameId}`);
@@ -139,21 +141,33 @@ function GameRoom() {
           { name: player2[0], choice: player2[1].choice }
         );
         
-        const roundUpdates = {};
-        if (result !== 'tie') {
-          allPlayers.forEach(([player, data]) => {
-            const currentScore = data.score;
-            roundUpdates[`/games/${gameId}/players/${player}/score`] = 
-              currentScore + (player === result ? 50 : -50);
-          });
-        }
-        
-        allPlayers.forEach(([player]) => {
-          roundUpdates[`/games/${gameId}/players/${player}/choice`] = null;
-          roundUpdates[`/games/${gameId}/players/${player}/ready`] = false;
+        setGameResult({
+          winner: result,
+          player1: { name: player1[0], choice: player1[1].choice },
+          player2: { name: player2[0], choice: player2[1].choice }
         });
-        
-        await update(ref(db), roundUpdates);
+        setShowResult(true);
+
+        setTimeout(async () => {
+          const roundUpdates = {};
+          if (result !== 'tie') {
+            allPlayers.forEach(([player, data]) => {
+              const currentScore = data.score;
+              roundUpdates[`/games/${gameId}/players/${player}/score`] = 
+                currentScore + (player === result ? 50 : -50);
+            });
+          }
+          
+          allPlayers.forEach(([player]) => {
+            roundUpdates[`/games/${gameId}/players/${player}/choice`] = null;
+            roundUpdates[`/games/${gameId}/players/${player}/ready`] = false;
+          });
+          
+          await update(ref(db), roundUpdates);
+          setShowResult(false);
+          setGameResult(null);
+          setRpsChoice(null);
+        }, 3000);
       }
     } catch (error) {
       console.error('Error updating game:', error);
@@ -170,6 +184,12 @@ function GameRoom() {
     };
     
     return rules[player1.choice] === player2.choice ? player1.name : player2.name;
+  };
+
+  const getResultMessage = (result) => {
+    if (!result) return '';
+    if (result.winner === 'tie') return "It's a tie!";
+    return result.winner === playerName ? 'You won! 🎉' : 'You lost...';
   };
 
   if (isLoading) {
@@ -220,23 +240,83 @@ function GameRoom() {
       )}
 
       {game.players?.[playerName] && game.type === 'rps' && (
-        <div>
-          <h3>Players:</h3>
-          {Object.entries(game.players).map(([name, data]) => (
-            <div key={name}>
-              {name}: {data.score} points
-              {data.ready && " ✓"}
-              {data.isHost && " (Host)"}
+        <div className="rps-game">
+          <div className="players-section">
+            <h3>Players</h3>
+            <div className="players-grid">
+              {Object.entries(game.players).map(([name, data]) => (
+                <div key={name} className={`player-card ${name === playerName ? 'current-player' : ''}`}>
+                  <div className="player-info">
+                    <span className="player-name">{name}</span>
+                    <span className="player-score">{data.score} points</span>
+                  </div>
+                  <div className="player-status">
+                    {data.ready && <span className="ready-status">Ready ✓</span>}
+                    {data.isHost && <span className="host-badge">Host</span>}
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-          <div className="game-controls">
-            <select value={rpsChoice || ''} onChange={(e) => setRpsChoice(e.target.value)}>
-              <option value="">Choose...</option>
-              <option value="rock">Rock</option>
-              <option value="paper">Paper</option>
-              <option value="scissors">Scissors</option>
-            </select>
-            <button onClick={playRPSRound}>Play</button>
+          </div>
+
+          {showResult && gameResult && (
+            <div className="game-result">
+              <div className="result-content">
+                <div className="player-choice">
+                  <span className="choice-icon large">{
+                    gameResult.player1.choice === 'rock' ? '🪨' :
+                    gameResult.player1.choice === 'paper' ? '📄' : '✂️'
+                  }</span>
+                  <span className="player-name">{gameResult.player1.name}</span>
+                </div>
+                <div className="vs">VS</div>
+                <div className="player-choice">
+                  <span className="choice-icon large">{
+                    gameResult.player2.choice === 'rock' ? '🪨' :
+                    gameResult.player2.choice === 'paper' ? '📄' : '✂️'
+                  }</span>
+                  <span className="player-name">{gameResult.player2.name}</span>
+                </div>
+                <div className="result-message">{getResultMessage(gameResult)}</div>
+              </div>
+            </div>
+          )}
+
+          <div className="rps-controls">
+            <h3>Make Your Choice</h3>
+            <div className="choice-buttons">
+              <button 
+                className={`choice-btn ${rpsChoice === 'rock' ? 'selected' : ''}`}
+                onClick={() => setRpsChoice('rock')}
+                disabled={game.players[playerName].ready}
+              >
+                <span className="choice-icon">🪨</span>
+                <span className="choice-text">Rock</span>
+              </button>
+              <button 
+                className={`choice-btn ${rpsChoice === 'paper' ? 'selected' : ''}`}
+                onClick={() => setRpsChoice('paper')}
+                disabled={game.players[playerName].ready}
+              >
+                <span className="choice-icon">📄</span>
+                <span className="choice-text">Paper</span>
+              </button>
+              <button 
+                className={`choice-btn ${rpsChoice === 'scissors' ? 'selected' : ''}`}
+                onClick={() => setRpsChoice('scissors')}
+                disabled={game.players[playerName].ready}
+              >
+                <span className="choice-icon">✂️</span>
+                <span className="choice-text">Scissors</span>
+              </button>
+            </div>
+            <button 
+              className="play-button"
+              onClick={playRPSRound}
+              disabled={!rpsChoice || game.players[playerName].ready}
+            >
+              {game.players[playerName].ready ? 'Waiting for opponent...' : 'Confirm Choice'}
+            </button>
           </div>
         </div>
       )}
