@@ -42,8 +42,8 @@ function MultiplicationGame({ game, gameId, playerName }) {
   const generateProblems = () => {
     const newProblems = [];
     for (let i = 0; i < settings.numberOfProblems; i++) {
-      const num1 = Math.floor(Math.random() * (10 ** settings.digit1));
-      const num2 = Math.floor(Math.random() * (10 ** settings.digit2));
+      const num1 = Math.floor(Math.random() * (10 ** settings.digit1 - 2)) + 2;
+      const num2 = Math.floor(Math.random() * (10 ** settings.digit2 - 2)) + 2;
       newProblems.push({
         num1,
         num2,
@@ -64,7 +64,7 @@ function MultiplicationGame({ game, gameId, playerName }) {
     // Reset all players' progress
     Object.keys(game.players).forEach(player => {
       updates[`/games/${gameId}/players/${player}/completed`] = false;
-      updates[`/games/${gameId}/players/${player}/score`] = 0;
+      updates[`/games/${gameId}/players/${player}/currentProblem`] = 0;
       updates[`/games/${gameId}/players/${player}/finishTime`] = null;
     });
     
@@ -81,10 +81,15 @@ function MultiplicationGame({ game, gameId, playerName }) {
         const timeTaken = finishTime - game.startTime;
         await update(ref(db), {
           [`/games/${gameId}/players/${playerName}/completed`]: true,
-          [`/games/${gameId}/players/${playerName}/finishTime`]: timeTaken
+          [`/games/${gameId}/players/${playerName}/finishTime`]: timeTaken,
+          [`/games/${gameId}/players/${playerName}/currentProblem`]: problems.length
         });
       } else {
-        setCurrentProblemIndex(prev => prev + 1);
+        const nextProblem = currentProblemIndex + 1;
+        setCurrentProblemIndex(nextProblem);
+        await update(ref(db), {
+          [`/games/${gameId}/players/${playerName}/currentProblem`]: nextProblem
+        });
       }
       setCurrentAnswer('');
     }
@@ -138,8 +143,8 @@ function MultiplicationGame({ game, gameId, playerName }) {
               onChange={(e) => updateGameSettings('digit1', e.target.value)}
               className="settings-input"
             />
-            <span className="setting-hint">Range: {settings.digit1 === 1 ? '0-9' : 
-              settings.digit1 === 2 ? '0-99' : '0-999'}</span>
+            <span className="setting-hint">Range: {settings.digit1 === 1 ? '2-9' : 
+              settings.digit1 === 2 ? '2-99' : '2-999'}</span>
           </div>
           <div className="setting-group">
             <label>Second Number Digits:</label>
@@ -151,8 +156,8 @@ function MultiplicationGame({ game, gameId, playerName }) {
               onChange={(e) => updateGameSettings('digit2', e.target.value)}
               className="settings-input"
             />
-            <span className="setting-hint">Range: {settings.digit2 === 1 ? '0-9' : 
-              settings.digit2 === 2 ? '0-99' : '0-999'}</span>
+            <span className="setting-hint">Range: {settings.digit2 === 1 ? '2-9' : 
+              settings.digit2 === 2 ? '2-99' : '2-999'}</span>
           </div>
           <div className="setting-group">
             <label>Number of Problems:</label>
@@ -264,7 +269,7 @@ function MultiplicationGame({ game, gameId, playerName }) {
                 </span>
               ) : (
                 <span className="solving-status">
-                  Problem {currentProblemIndex + 1}/{problems.length}
+                  Problem {(data.currentProblem || 0) + 1}/{problems.length}
                 </span>
               )}
             </div>
