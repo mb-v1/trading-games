@@ -39,6 +39,20 @@ function MultiplicationGame({ game, gameId, playerName }) {
     }
   }, [gameStarted, game.players, playerName]);
 
+  useEffect(() => {
+    if (game.status === 'active' && game.startTime) {
+      // Reset local state for all players when game is restarted
+      setCurrentProblemIndex(0);
+      setCurrentAnswer('');
+      setGameStarted(true);
+      setElapsedTime(0);
+      if (timerInterval) {
+        clearInterval(timerInterval);
+      }
+      setStartTime(game.startTime);
+    }
+  }, [game.status, game.startTime]);
+
   const generateProblems = () => {
     const newProblems = [];
     for (let i = 0; i < settings.numberOfProblems; i++) {
@@ -114,6 +128,44 @@ function MultiplicationGame({ game, gameId, playerName }) {
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
+
+  const resetGame = async () => {
+    // First reset the game state in Firebase
+    const problems = generateProblems();
+    const updates = {
+      [`/games/${gameId}/problems`]: problems,
+      [`/games/${gameId}/status`]: 'waiting', // Set to waiting first
+      [`/games/${gameId}/startTime`]: null
+    };
+    
+    // Reset all players' progress
+    Object.keys(game.players).forEach(player => {
+      updates[`/games/${gameId}/players/${player}/completed`] = false;
+      updates[`/games/${gameId}/players/${player}/currentProblem`] = 0;
+      updates[`/games/${gameId}/players/${player}/finishTime`] = null;
+    });
+    
+    await update(ref(db), updates);
+
+    // Short delay to ensure all clients have processed the reset
+    setTimeout(async () => {
+      await update(ref(db), {
+        [`/games/${gameId}/status`]: 'active',
+        [`/games/${gameId}/startTime`]: Date.now()
+      });
+    }, 100);
+  };
+
+  if (!gameStarted && game.status === 'waiting') {
+    return (
+      <div className="multiplication-game">
+        <h3>Multiplication Challenge</h3>
+        <div className="waiting-message">
+          Get ready for the next round...
+        </div>
+      </div>
+    );
+  }
 
   if (!gameStarted && isHost) {
     return (
@@ -234,6 +286,16 @@ function MultiplicationGame({ game, gameId, playerName }) {
                 </div>
               ))}
           </div>
+          {isHost && game.status !== 'waiting' && (
+            <div className="game-actions">
+              <button 
+                onClick={resetGame}
+                className="play-again-button"
+              >
+                Play Again
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         <div className="problem-section">
