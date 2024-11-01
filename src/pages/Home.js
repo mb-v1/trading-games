@@ -6,7 +6,9 @@ import { v4 as uuidv4 } from 'uuid';
 
 function Home() {
   const navigate = useNavigate();
-  const [playerName, setPlayerName] = useState('');
+  const [playerName, setPlayerName] = useState(() => {
+    return localStorage.getItem('playerName') || '';
+  });
   const [isCreating, setIsCreating] = useState(false);
 
   const games = [
@@ -58,7 +60,7 @@ function Home() {
         }
       });
 
-      navigate(`/game/${gameId}?type=${gameType}`, { state: { playerName } });
+      navigate(`game/${gameId}?type=${gameType}`, { state: { playerName } });
     } catch (error) {
       console.error('Error creating game:', error);
       showToast('Failed to create game. Please try again.');
@@ -75,21 +77,25 @@ function Home() {
     setTimeout(() => toast.remove(), 3000);
   };
 
+  const handleNameChange = (e) => {
+    const newName = e.target.value;
+    setPlayerName(newName);
+    localStorage.setItem('playerName', newName);
+  };
+
   return (
     <div className="game-container fade-in">
-      <h2>Welcome to Trading Games</h2>
       <div className="join-container">
-        <h3>Enter Your Trading Name</h3>
         <input
           type="text"
-          placeholder="Enter your name"
+          placeholder="Enter username"
           value={playerName}
-          onChange={(e) => setPlayerName(e.target.value)}
+          onChange={handleNameChange}
           maxLength={20}
           disabled={isCreating}
+          className="username-input"
         />
       </div>
-      <h3>Available Trading Games</h3>
       <div className="games-grid">
         {games.map(game => (
           <div key={game.id} className="game-card">
