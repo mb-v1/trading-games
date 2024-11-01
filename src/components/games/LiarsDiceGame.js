@@ -8,6 +8,7 @@ function LiarsDiceGame({ game, gameId, playerName }) {
   const [currentBid, setCurrentBid] = useState(null);
   const [selectedFace, setSelectedFace] = useState(1);
   const [selectedCount, setSelectedCount] = useState(1);
+  const [countdown, setCountdown] = useState(null);
   
   useEffect(() => {
     if (game.status === 'waiting') {
@@ -81,7 +82,6 @@ function LiarsDiceGame({ game, gameId, playerName }) {
   const challenge = async () => {
     if (!isPlayerTurn() || !game.lastBid) return;
 
-    // Collect all dice and count the bid face
     const allDice = Object.values(game.players)
       .filter(player => player.dice && player.dice.length > 0)
       .flatMap(player => player.dice);
@@ -90,9 +90,14 @@ function LiarsDiceGame({ game, gameId, playerName }) {
     const bidWasCorrect = actualCount >= game.lastBid.count;
     const losingPlayer = bidWasCorrect ? playerName : game.lastBid.player;
     
-    // Get current dice array of losing player and remove one die
     const currentDice = [...(game.players[losingPlayer].dice || [])];
-    currentDice.pop(); // Remove one die
+    currentDice.pop();
+
+    // Check remaining players after elimination
+    const remainingPlayers = Object.entries(game.players)
+      .filter(([name, player]) => 
+        name !== losingPlayer && player.dice && player.dice.length > 0
+      );
 
     const updates = {
       [`games/${gameId}/players/${losingPlayer}/dice`]: currentDice,
@@ -105,48 +110,68 @@ function LiarsDiceGame({ game, gameId, playerName }) {
         actualCount,
         bidCount: game.lastBid.count,
         bidFace: game.lastBid.face,
-        losingPlayer
+        losingPlayer,
+        revealEndTime: Date.now() + 10000
       }
     };
 
-    // Start new round if game should continue
-    if (currentDice.length > 0) {
-      // Roll new dice for all active players
-      Object.entries(game.players).forEach(([player, playerData]) => {
-        if (player === losingPlayer) {
-          // Losing player gets one less die
-          updates[`games/${gameId}/players/${player}/dice`] = rollDice(currentDice.length);
-        } else if (playerData.dice?.length > 0) {
-          // Other players keep their current number of dice
-          updates[`games/${gameId}/players/${player}/dice`] = rollDice(playerData.dice.length);
-        }
-      });
-      
-      // Set the losing player as the next turn
-      updates[`games/${gameId}/currentTurn`] = losingPlayer;
-    } else {
-      // Check if game is over (only one player with dice remaining)
-      const remainingPlayers = Object.entries(game.players)
-        .filter(([_, player]) => player.dice?.length > 0);
-      
+    // Handle game state based on remaining players
+    if (currentDice.length === 0) {
       if (remainingPlayers.length === 1) {
+        // Only one player left - they win
         updates[`games/${gameId}/status`] = 'completed';
         updates[`games/${gameId}/winner`] = remainingPlayers[0][0];
+        updates[`games/${gameId}/gameEndMessage`] = 
+          `${losingPlayer} lost all their dice! ${remainingPlayers[0][0]} wins!`;
       }
     }
 
-    console.log('Challenge updates:', updates);
     await update(ref(db), updates);
+
+    // Only start new round if game isn't over
+    if (!updates[`games/${gameId}/status`]) {
+      setTimeout(async () => {
+        const newRoundUpdates = {
+          [`games/${gameId}/revealedDice`]: false,
+          [`games/${gameId}/challengeResult`]: null,
+          [`games/${gameId}/lastUpdated`]: Date.now()
+        };
+
+        // Roll new dice for all active players
+        Object.entries(game.players)
+          .filter(([_, player]) => player.dice?.length > 0)
+          .forEach(([player, playerData]) => {
+            newRoundUpdates[`games/${gameId}/players/${player}/dice`] = 
+              Array.from({ length: playerData.dice.length }, 
+                () => Math.floor(Math.random() * 6) + 1
+              );
+          });
+
+        // Set next turn to the player after the losing player
+        const nextPlayer = getNextPlayer();
+        if (nextPlayer) {
+          newRoundUpdates[`games/${gameId}/currentTurn`] = nextPlayer;
+        }
+
+        await update(ref(db), newRoundUpdates);
+      }, 10000);
+    }
   };
 
   const getNextPlayer = () => {
+    // Get all players that still have dice, in order of their position
     const activePlayers = Object.entries(game.players)
       .filter(([_, player]) => player.dice?.length > 0)
       .map(([name]) => name);
-    
+
+    if (activePlayers.length === 0) return null;
+
     const currentIndex = activePlayers.indexOf(game.currentTurn);
-    const nextIndex = (currentIndex + 1) % activePlayers.length;
-    return activePlayers[nextIndex];
+    // If current player isn't found or is last, start from beginning
+    if (currentIndex === -1 || currentIndex === activePlayers.length - 1) {
+      return activePlayers[0];
+    }
+    return activePlayers[currentIndex + 1];
   };
 
   // Add this useEffect to monitor game state changes
@@ -168,12 +193,77 @@ function LiarsDiceGame({ game, gameId, playerName }) {
     });
   }, [game.players]);
 
+  // Add useEffect to handle countdown for all players
+  useEffect(() => {
+    if (game.challengeResult?.revealEndTime) {
+      const updateCountdown = () => {
+        const now = Date.now();
+        const timeLeft = Math.ceil((game.challengeResult.revealEndTime - now) / 1000);
+        
+        if (timeLeft <= 0) {
+          setCountdown(null);
+          return false; // Return false to stop the interval
+        }
+        
+        setCountdown(timeLeft);
+        return true; // Continue the interval
+      };
+
+      // Initial countdown update
+      updateCountdown();
+
+      // Update countdown every second
+      const intervalId = setInterval(() => {
+        const shouldContinue = updateCountdown();
+        if (!shouldContinue) {
+          clearInterval(intervalId);
+        }
+      }, 1000);
+
+      return () => clearInterval(intervalId);
+    } else {
+      setCountdown(null);
+    }
+  }, [game.challengeResult?.revealEndTime]);
+
+  // Add a helper function to show player order
+  const getPlayerOrder = () => {
+    return Object.entries(game.players)
+      .filter(([_, player]) => player.dice?.length > 0)
+      .map(([name], index) => (
+        <span key={name} className="player-order">
+          {index + 1}. {name}
+          {name === game.currentTurn ? ' (Current Turn)' : ''}
+        </span>
+      ));
+  };
+
+  // Calculate total dice in play
+  const totalDiceCount = () => {
+    return Object.values(game.players)
+      .reduce((sum, player) => sum + (player.dice?.length || 0), 0);
+  };
+
+  // Check if current bid is valid
+  const canMakeBid = () => {
+    if (!isPlayerTurn()) return false;
+    
+    if (!game.lastBid) return true;
+    
+    return selectedCount > game.lastBid.count || 
+      (selectedCount === game.lastBid.count && selectedFace > game.lastBid.face);
+  };
+
   return (
     <div className="liars-dice-game">
       <div className="game-status">
         {game.status === 'completed' ? (
           <div className="winner-message">
-            🎉 {game.winner} wins the game! 🎉
+            🎉 {game.gameEndMessage || `${game.winner} wins the game!`} 🎉
+          </div>
+        ) : countdown ? (
+          <div className="countdown-message">
+            New round starting in {countdown} seconds...
           </div>
         ) : (
           game.currentTurn === playerName ? (
@@ -184,36 +274,33 @@ function LiarsDiceGame({ game, gameId, playerName }) {
         )}
       </div>
 
-      {game.challengeResult && (
-        <div className="challenge-result">
-          <h3>Challenge Result:</h3>
-          <p>
-            {game.challengeResult.challenger} challenged {game.challengeResult.bidder}'s bid of{' '}
-            {game.challengeResult.bidCount} {game.challengeResult.bidFace}'s
-          </p>
-          <p>
-            Actual count: {game.challengeResult.actualCount}
-          </p>
-          <p>
-            {game.challengeResult.losingPlayer} lost a die!
-          </p>
+      <div className="player-order-section">
+        <h3>Turn Order:</h3>
+        <div className="player-order-list">
+          {getPlayerOrder()}
         </div>
-      )}
+      </div>
 
       <div className="players-section">
         {Object.entries(game.players).map(([name, player]) => (
           <div 
             key={name} 
-            className={`player-card ${name === playerName ? 'current-player' : ''} ${name === game.currentTurn ? 'active-turn' : ''}`}
+            className={`player-card ${name === playerName ? 'current-player' : ''} 
+              ${name === game.currentTurn ? 'active-turn' : ''}
+              ${player.dice?.length === 0 ? 'eliminated' : ''}`}
           >
             <div className="player-info">
-              <span className="player-name">{name}</span>
+              <span className="player-name">
+                {name} {player.dice?.length === 0 && '(Eliminated)'}
+              </span>
               <span className="dice-count">
                 Dice: {player.dice?.length || 0}
               </span>
-              {name === game.currentTurn && <span className="turn-indicator">🎲 Current Turn</span>}
+              {name === game.currentTurn && game.status !== 'completed' && (
+                <span className="turn-indicator">🎲 Current Turn</span>
+              )}
             </div>
-            {(name === playerName || game.revealedDice) && (
+            {((name === playerName && !game.revealedDice) || game.revealedDice) && (
               <div className="dice-display">
                 {player.dice?.map((value, i) => (
                   <span key={i} className="die">
@@ -226,44 +313,40 @@ function LiarsDiceGame({ game, gameId, playerName }) {
         ))}
       </div>
 
-      {isPlayerTurn() && game.players[playerName]?.dice?.length > 0 && (
+      {game.currentTurn === playerName && !game.revealedDice && game.status !== 'completed' && (
         <div className="game-controls">
           <div className="bid-controls">
-            <div className="bid-inputs">
-              <select 
-                value={selectedCount} 
-                onChange={(e) => setSelectedCount(Number(e.target.value))}
-              >
-                {Array.from({ length: 30 }, (_, i) => (
-                  <option key={i+1} value={i+1}>{i+1}</option>
-                ))}
-              </select>
-              <select 
-                value={selectedFace} 
-                onChange={(e) => setSelectedFace(Number(e.target.value))}
-              >
-                {Array.from({ length: 6 }, (_, i) => (
-                  <option key={i+1} value={i+1}>{i+1}</option>
-                ))}
-              </select>
-            </div>
-            <div className="action-buttons">
+            <select 
+              value={selectedCount} 
+              onChange={(e) => setSelectedCount(Number(e.target.value))}
+            >
+              {Array.from({ length: totalDiceCount() }, (_, i) => (
+                <option key={i+1} value={i+1}>{i+1}</option>
+              ))}
+            </select>
+            <select 
+              value={selectedFace} 
+              onChange={(e) => setSelectedFace(Number(e.target.value))}
+            >
+              {Array.from({ length: 6 }, (_, i) => (
+                <option key={i+1} value={i+1}>{i+1}</option>
+              ))}
+            </select>
+            <button 
+              onClick={makeBid}
+              disabled={!canMakeBid()}
+              className="bid-button"
+            >
+              Make Bid
+            </button>
+            {game.lastBid && (
               <button 
-                onClick={makeBid}
-                disabled={game.lastBid && selectedCount === 0}
-                className="bid-button"
+                onClick={challenge}
+                className="challenge-button"
               >
-                Make Bid
+                Challenge Last Bid
               </button>
-              {game.lastBid && (
-                <button 
-                  onClick={challenge}
-                  className="challenge-button"
-                >
-                  Challenge Last Bid
-                </button>
-              )}
-            </div>
+            )}
           </div>
         </div>
       )}

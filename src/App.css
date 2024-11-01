@@ -914,127 +914,177 @@ input:focus, select:focus {
 
 /* Add these styles to your existing App.css */
 .liars-dice-game {
-  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.players-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.player-card {
   background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
-.dice-display {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
-}
-
-.die {
-  font-size: 2rem;
-  background: #f8fafc;
-  padding: 0.5rem;
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.game-controls {
+  position: sticky;
+  bottom: 0;
+  background: white;
+  padding: 1rem;
+  border-top: 1px solid #eee;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+  margin-top: 1rem;
 }
 
 .bid-controls {
   display: flex;
   gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.bid-controls select {
+  padding: 0.5rem;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  min-width: 80px;
+}
+
+.bid-controls button {
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.player-order-section {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.player-order-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.dice-display {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 600px) {
+  .bid-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .player-card {
+    min-width: 100%;
+  }
+  
+  .dice-display {
+    justify-content: center;
+  }
+}
+
+.die {
+  font-size: 2.5rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
   align-items: center;
   justify-content: center;
-  margin: 2rem 0;
-}
-
-.current-bid {
-  text-align: center;
-  padding: 1rem;
-  background: #f0f7ff;
+  background: white;
+  border: 2px solid #e2e8f0;
   border-radius: 8px;
-  margin: 1rem 0;
-  color: var(--primary-color);
-  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: all 0.2s ease;
 }
 
-.dice-count {
-  font-size: 0.9rem;
-  color: #64748b;
-  margin-left: 1rem;
+.die:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
 
-/* Add these new styles for Liar's Dice */
-.game-status {
-  text-align: center;
-  margin-bottom: 1rem;
-  padding: 1rem;
-  background: #f0f7ff;
-  border-radius: 8px;
-  font-weight: 500;
-}
-
-.active-turn {
-  border: 2px solid var(--primary-color);
-  background: #f0f7ff;
-}
-
-.turn-indicator {
-  background: var(--primary-color);
-  color: white;
-  padding: 0.25rem 0.75rem;
-  border-radius: 999px;
-  font-size: 0.8rem;
-  margin-left: 1rem;
-}
-
-.bid-inputs {
+.player-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
-.action-buttons {
-  display: flex;
+  flex-direction: column;
   gap: 1rem;
 }
 
-.bid-button {
-  background: var(--primary-color);
+.player-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
-.challenge-button {
-  background: var(--accent-color);
-}
-
-.revealed-dice {
-  margin-top: 2rem;
-  padding: 1rem;
+.dice-display {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.5rem;
   background: #f8fafc;
   border-radius: 8px;
+  justify-content: center;
 }
 
-.player-revealed-dice {
+.game-controls {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  padding: 1rem;
+  border-top: 1px solid #e2e8f0;
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
+  z-index: 100;
+}
+
+.bid-controls {
   display: flex;
-  align-items: center;
   gap: 1rem;
-  margin: 0.5rem 0;
+  justify-content: center;
+  align-items: center;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
-.challenge-result {
-  background: #f0f7ff;
+.bid-controls select {
+  padding: 0.75rem;
   border-radius: 8px;
-  padding: 1rem;
-  margin: 1rem 0;
-  text-align: center;
+  border: 2px solid #e2e8f0;
+  font-size: 1rem;
+  min-width: 100px;
 }
 
-.challenge-result h3 {
-  color: var(--primary-color);
-  margin-bottom: 0.5rem;
-}
-
-.winner-message {
-  background: var(--accent-color);
-  color: white;
-  padding: 1rem;
+.bid-button, .challenge-button {
+  padding: 0.75rem 1rem;
   border-radius: 8px;
-  font-size: 1.2rem;
+  border: none;
+  cursor: pointer;
   font-weight: 500;
-  text-align: center;
-  animation: fadeIn 0.3s ease-out;
+  transition: all 0.2s ease;
 }
