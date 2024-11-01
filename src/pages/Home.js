@@ -27,6 +27,14 @@ function Home() {
       icon: '✌️',
       minPlayers: 2,
       maxPlayers: 2
+    },
+    {
+      id: 'multiplication',
+      title: 'Speed Math Challenge',
+      description: 'Race against others to solve multiplication problems. Test your mental math skills!',
+      icon: '🧮',
+      minPlayers: 2,
+      maxPlayers: 4
     }
   ];
 

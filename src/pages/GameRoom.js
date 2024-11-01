@@ -4,6 +4,7 @@ import { ref, onValue, update, get, set } from 'firebase/database';
 import { db } from '../firebase-config';
 import CoinFlipGame from '../components/games/CoinFlipGame';
 import RPSGame from '../components/games/RPSGame';
+import MultiplicationGame from '../components/games/MultiplicationGame';
 
 function GameRoom() {
   const { gameId } = useParams();
@@ -124,6 +125,14 @@ function GameRoom() {
 
       {game.players?.[playerName] && game.type === 'rps' && (
         <RPSGame 
+          game={game} 
+          gameId={gameId} 
+          playerName={playerName}
+        />
+      )}
+
+      {game.players?.[playerName] && game.type === 'multiplication' && (
+        <MultiplicationGame 
           game={game} 
           gameId={gameId} 
           playerName={playerName}

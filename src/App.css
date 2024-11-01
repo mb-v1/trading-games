@@ -667,3 +667,216 @@ input:focus, select:focus {
 .choice-btn.selected::after {
   opacity: 0.15;
 }
+
+/* Add these styles at the end of your App.css file */
+.multiplication-game {
+  padding: 2rem;
+}
+
+.game-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 400px;
+  margin: 2rem auto;
+}
+
+.setting-group {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.setting-group label {
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.setting-group select {
+  width: 200px;
+}
+
+.start-button {
+  margin-top: 1rem;
+  width: 100%;
+  background: var(--accent-color);
+}
+
+.problem-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.problem {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: var(--primary-color);
+}
+
+.progress {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.completion-message {
+  text-align: center;
+  color: var(--accent-color);
+  font-size: 1.2rem;
+  margin: 2rem 0;
+}
+
+.completion-time {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin-left: 0.5rem;
+}
+
+.completed-badge {
+  background: var(--accent-color);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+}
+
+.waiting-message {
+  text-align: center;
+  color: #64748b;
+  font-size: 1.2rem;
+  margin: 2rem 0;
+}
+
+/* Add these new styles for the multiplication game */
+.lobby-info {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.lobby-info h4 {
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+}
+
+.settings-input {
+  width: 100px;
+  padding: 0.5rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.settings-input:focus {
+  border-color: var(--primary-color);
+  outline: none;
+}
+
+.setting-hint {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-left: 0.5rem;
+}
+
+.setting-group {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.start-button:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+.players-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.game-settings {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Add to your existing multiplication game styles */
+.timer {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+}
+
+.results-section {
+  margin-top: 2rem;
+  width: 100%;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.result-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+}
+
+.result-card.current-player {
+  background: #f0f7ff;
+  border: 1px solid var(--primary-color);
+}
+
+.position {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  width: 30px;
+}
+
+.finish-time {
+  margin-left: auto;
+  font-weight: 500;
+  color: var(--accent-color);
+}
+
+.still-solving {
+  margin-left: auto;
+  color: #64748b;
+  font-style: italic;
+}
+
+.solving-status {
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+.answer-input {
+  font-size: 1.5rem;
+  text-align: center;
+  width: 150px;
+  padding: 0.5rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.answer-input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
