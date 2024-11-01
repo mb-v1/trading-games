@@ -14,7 +14,6 @@ function MultiplicationGame({ game, gameId, playerName }) {
   const [gameStarted, setGameStarted] = useState(false);
   const [startTime, setStartTime] = useState(null);
   const [elapsedTime, setElapsedTime] = useState(0);
-  const [timerInterval, setTimerInterval] = useState(null);
 
   const isHost = game.players[playerName]?.isHost;
 
@@ -23,32 +22,29 @@ function MultiplicationGame({ game, gameId, playerName }) {
       setProblems(game.problems);
       if (game.status === 'active' && !gameStarted) {
         setGameStarted(true);
-        setStartTime(Date.now());
+        setStartTime(game.startTime);
       }
     }
   }, [game.problems, game.status]);
 
   useEffect(() => {
     if (gameStarted && !game.players[playerName]?.completed) {
-      const interval = setInterval(() => {
-        setElapsedTime(prev => prev + 1);
-      }, 1000);
-      setTimerInterval(interval);
+      const timerInterval = setInterval(() => {
+        if (startTime) {
+          setElapsedTime(Math.floor((Date.now() - startTime) / 1000));
+        }
+      }, 100);
 
-      return () => clearInterval(interval);
+      return () => clearInterval(timerInterval);
     }
-  }, [gameStarted, game.players, playerName]);
+  }, [gameStarted, game.players, playerName, startTime]);
 
   useEffect(() => {
     if (game.status === 'active' && game.startTime) {
-      // Reset local state for all players when game is restarted
       setCurrentProblemIndex(0);
       setCurrentAnswer('');
       setGameStarted(true);
       setElapsedTime(0);
-      if (timerInterval) {
-        clearInterval(timerInterval);
-      }
       setStartTime(game.startTime);
     }
   }, [game.status, game.startTime]);
@@ -90,12 +86,10 @@ function MultiplicationGame({ game, gameId, playerName }) {
     if (!isNaN(answer) && answer === problems[currentProblemIndex].answer) {
       if (currentProblemIndex === problems.length - 1) {
         // Game completed
-        clearInterval(timerInterval);
-        const finishTime = Date.now();
-        const timeTaken = finishTime - game.startTime;
+        const finishTime = Date.now() - game.startTime;
         await update(ref(db), {
           [`/games/${gameId}/players/${playerName}/completed`]: true,
-          [`/games/${gameId}/players/${playerName}/finishTime`]: timeTaken,
+          [`/games/${gameId}/players/${playerName}/finishTime`]: finishTime,
           [`/games/${gameId}/players/${playerName}/currentProblem`]: problems.length
         });
       } else {
@@ -114,7 +108,7 @@ function MultiplicationGame({ game, gameId, playerName }) {
     if (setting.includes('digit')) {
       validatedValue = Math.min(Math.max(1, validatedValue), 3); // Max 3 digits
     } else if (setting === 'numberOfProblems') {
-      validatedValue = Math.min(Math.max(1, validatedValue), 50); // Max 50 problems
+      validatedValue = Math.min(Math.max(1, validatedValue), 100); // Max 100 problems, min 1
     }
     
     setSettings(prev => ({
@@ -156,7 +150,7 @@ function MultiplicationGame({ game, gameId, playerName }) {
     }, 100);
   };
 
-  if (!gameStarted && game.status === 'waiting') {
+  if (!gameStarted && game.status === 'waiting' && game.problems) {
     return (
       <div className="multiplication-game">
         <h3>Multiplication Challenge</h3>
@@ -216,12 +210,12 @@ function MultiplicationGame({ game, gameId, playerName }) {
             <input
               type="number"
               min="1"
-              max="50"
+              max="100"
               value={settings.numberOfProblems}
               onChange={(e) => updateGameSettings('numberOfProblems', e.target.value)}
               className="settings-input"
             />
-            <span className="setting-hint">Max: 50 problems</span>
+            <span className="setting-hint">Between 1-100 problems</span>
           </div>
           <button 
             onClick={startGame} 
