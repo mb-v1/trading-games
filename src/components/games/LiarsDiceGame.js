@@ -90,17 +90,7 @@ function LiarsDiceGame({ game, gameId, playerName }) {
     const bidWasCorrect = actualCount >= game.lastBid.count;
     const losingPlayer = bidWasCorrect ? playerName : game.lastBid.player;
     
-    const currentDice = [...(game.players[losingPlayer].dice || [])];
-    currentDice.pop();
-
-    // Check remaining players after elimination
-    const remainingPlayers = Object.entries(game.players)
-      .filter(([name, player]) => 
-        name !== losingPlayer && player.dice && player.dice.length > 0
-      );
-
     const updates = {
-      [`games/${gameId}/players/${losingPlayer}/dice`]: currentDice,
       [`games/${gameId}/lastBid`]: null,
       [`games/${gameId}/revealedDice`]: true,
       [`games/${gameId}/lastUpdated`]: Date.now(),
@@ -115,47 +105,64 @@ function LiarsDiceGame({ game, gameId, playerName }) {
       }
     };
 
-    // Handle game state based on remaining players
-    if (currentDice.length === 0) {
-      if (remainingPlayers.length === 1) {
-        // Only one player left - they win
-        updates[`games/${gameId}/status`] = 'completed';
-        updates[`games/${gameId}/winner`] = remainingPlayers[0][0];
-        updates[`games/${gameId}/gameEndMessage`] = 
-          `${losingPlayer} lost all their dice! ${remainingPlayers[0][0]} wins!`;
-      }
-    }
-
     await update(ref(db), updates);
 
-    // Only start new round if game isn't over
-    if (!updates[`games/${gameId}/status`]) {
-      setTimeout(async () => {
+    // Start new round after countdown unless game is over
+    setTimeout(async () => {
+      // Get the current dice count for the losing player
+      const losingPlayerDice = [...(game.players[losingPlayer].dice || [])];
+      losingPlayerDice.pop(); // Remove one die
+
+      // Check if game is over
+      const remainingPlayers = Object.entries(game.players)
+        .filter(([name, player]) => 
+          name !== losingPlayer && player.dice && player.dice.length > 0
+        );
+
+      if (losingPlayerDice.length === 0 && remainingPlayers.length === 1) {
+        // Game over
+        const gameOverUpdates = {
+          [`games/${gameId}/status`]: 'completed',
+          [`games/${gameId}/winner`]: remainingPlayers[0][0],
+          [`games/${gameId}/gameEndMessage`]: 
+            `${losingPlayer} lost all their dice! ${remainingPlayers[0][0]} wins!`,
+          [`games/${gameId}/revealedDice`]: false,
+          [`games/${gameId}/challengeResult`]: null,
+          [`games/${gameId}/players/${losingPlayer}/dice`]: losingPlayerDice,
+        };
+        await update(ref(db), gameOverUpdates);
+      } else {
+        // Start new round
         const newRoundUpdates = {
           [`games/${gameId}/revealedDice`]: false,
           [`games/${gameId}/challengeResult`]: null,
-          [`games/${gameId}/lastUpdated`]: Date.now()
+          [`games/${gameId}/lastUpdated`]: Date.now(),
+          [`games/${gameId}/players/${losingPlayer}/dice`]: losingPlayerDice,
         };
 
-        // Roll new dice for all active players
-        Object.entries(game.players)
-          .filter(([_, player]) => player.dice?.length > 0)
-          .forEach(([player, playerData]) => {
-            newRoundUpdates[`games/${gameId}/players/${player}/dice`] = 
-              Array.from({ length: playerData.dice.length }, 
+        // Roll new dice for all players
+        Object.entries(game.players).forEach(([name, player]) => {
+          const diceCount = name === losingPlayer ? 
+            losingPlayerDice.length : 
+            player.dice?.length || 0;
+
+          if (diceCount > 0) {
+            newRoundUpdates[`games/${gameId}/players/${name}/dice`] = 
+              Array.from({ length: diceCount }, 
                 () => Math.floor(Math.random() * 6) + 1
               );
-          });
+          }
+        });
 
-        // Set next turn to the player after the losing player
+        // Set next turn
         const nextPlayer = getNextPlayer();
         if (nextPlayer) {
           newRoundUpdates[`games/${gameId}/currentTurn`] = nextPlayer;
         }
 
         await update(ref(db), newRoundUpdates);
-      }, 10000);
-    }
+      }
+    }, 10000);
   };
 
   const getNextPlayer = () => {
