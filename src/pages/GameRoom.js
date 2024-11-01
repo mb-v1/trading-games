@@ -5,6 +5,8 @@ import { db } from '../firebase-config';
 import CoinFlipGame from '../components/games/CoinFlipGame';
 import RPSGame from '../components/games/RPSGame';
 import MultiplicationGame from '../components/games/MultiplicationGame';
+import LiarsDiceGame from '../components/games/LiarsDiceGame';
+import { rollDice } from '../utils/gameUtils';
 
 function GameRoom() {
   const { gameId } = useParams();
@@ -61,16 +63,17 @@ function GameRoom() {
         return;
       }
 
-      if (gameData.players && Object.keys(gameData.players).length >= 2) {
+      if (gameData.players && Object.keys(gameData.players).length >= gameData.settings?.maxPlayers) {
         alert('Game is full');
         return;
       }
 
       const updates = {
         [`/games/${gameId}/players/${playerName}`]: {
-          isHost: false,
+          isHost: !gameData.players || Object.keys(gameData.players).length === 0,
           ready: false,
-          score: 1000,
+          dice: rollDice(5),
+          isActive: true,
           joinedAt: Date.now()
         },
         [`/games/${gameId}/lastUpdated`]: Date.now()
@@ -133,6 +136,14 @@ function GameRoom() {
 
       {game.players?.[playerName] && game.type === 'multiplication' && (
         <MultiplicationGame 
+          game={game} 
+          gameId={gameId} 
+          playerName={playerName}
+        />
+      )}
+
+      {game.players?.[playerName] && game.type === 'liars-dice' && (
+        <LiarsDiceGame 
           game={game} 
           gameId={gameId} 
           playerName={playerName}

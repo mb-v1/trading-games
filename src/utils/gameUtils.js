@@ -14,4 +14,8 @@ export const getResultMessage = (result, playerName) => {
   if (!result) return '';
   if (result.winner === 'tie') return "It's a tie!";
   return result.winner === playerName ? 'You won! 🎉' : 'You lost...';
+};
+
+export const rollDice = (count) => {
+  return Array.from({ length: count }, () => Math.floor(Math.random() * 6) + 1);
 }; 

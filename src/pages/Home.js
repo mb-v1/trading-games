@@ -35,6 +35,14 @@ function Home() {
       icon: '🧮',
       minPlayers: 2,
       maxPlayers: 4
+    },
+    {
+      id: 'liars-dice',
+      title: "Liar's Dice",
+      description: 'A thrilling game of deception and probability. Bluff your way to victory!',
+      icon: '🎲',
+      minPlayers: 2,
+      maxPlayers: 6
     }
   ];
 

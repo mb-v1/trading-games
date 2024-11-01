@@ -911,3 +911,130 @@ input:focus, select:focus {
   border-radius: 12px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
+
+/* Add these styles to your existing App.css */
+.liars-dice-game {
+  padding: 2rem;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.dice-display {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.die {
+  font-size: 2rem;
+  background: #f8fafc;
+  padding: 0.5rem;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.bid-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: center;
+  margin: 2rem 0;
+}
+
+.current-bid {
+  text-align: center;
+  padding: 1rem;
+  background: #f0f7ff;
+  border-radius: 8px;
+  margin: 1rem 0;
+  color: var(--primary-color);
+  font-weight: 500;
+}
+
+.dice-count {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin-left: 1rem;
+}
+
+/* Add these new styles for Liar's Dice */
+.game-status {
+  text-align: center;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #f0f7ff;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.active-turn {
+  border: 2px solid var(--primary-color);
+  background: #f0f7ff;
+}
+
+.turn-indicator {
+  background: var(--primary-color);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  margin-left: 1rem;
+}
+
+.bid-inputs {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+}
+
+.bid-button {
+  background: var(--primary-color);
+}
+
+.challenge-button {
+  background: var(--accent-color);
+}
+
+.revealed-dice {
+  margin-top: 2rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.player-revealed-dice {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0.5rem 0;
+}
+
+.challenge-result {
+  background: #f0f7ff;
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+  text-align: center;
+}
+
+.challenge-result h3 {
+  color: var(--primary-color);
+  margin-bottom: 0.5rem;
+}
+
+.winner-message {
+  background: var(--accent-color);
+  color: white;
+  padding: 1rem;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  font-weight: 500;
+  text-align: center;
+  animation: fadeIn 0.3s ease-out;
+}
