@@ -29,8 +29,9 @@ function LiarsDiceGame({ game, gameId, playerName }) {
     
     setIsLoading(true);
     try {
+      // Get players in order they joined
       const activePlayers = Object.entries(game.players)
-        .filter(([_, player]) => player.isActive)
+        .sort((a, b) => (a[1].joinedAt || 0) - (b[1].joinedAt || 0))
         .map(([name]) => name);
 
       if (activePlayers.length < 2) {
@@ -48,6 +49,7 @@ function LiarsDiceGame({ game, gameId, playerName }) {
       // Initialize dice for all active players
       activePlayers.forEach(player => {
         updates[`games/${gameId}/players/${player}/dice`] = rollDice(5);
+        updates[`games/${gameId}/players/${player}/isActive`] = true;
       });
 
       await update(ref(db), updates);
@@ -77,10 +79,12 @@ function LiarsDiceGame({ game, gameId, playerName }) {
         }
       }
 
-      // Get next player
+      // Get active players in order they joined
       const activePlayers = Object.entries(game.players)
         .filter(([_, player]) => player.isActive)
+        .sort((a, b) => (a[1].joinedAt || 0) - (b[1].joinedAt || 0))
         .map(([name]) => name);
+
       const currentIndex = activePlayers.indexOf(playerName);
       const nextPlayer = activePlayers[(currentIndex + 1) % activePlayers.length];
 
@@ -189,11 +193,13 @@ function LiarsDiceGame({ game, gameId, playerName }) {
         }
       } else {
         // No elimination, just continue with next round
-        const remainingPlayers = Object.entries(game.players)
+        const activePlayers = Object.entries(game.players)
           .filter(([_, player]) => player.isActive)
+          .sort((a, b) => (a[1].joinedAt || 0) - (b[1].joinedAt || 0))
           .map(([name]) => name);
 
-        const nextPlayer = remainingPlayers[0];
+        const currentIndex = activePlayers.indexOf(playerName);
+        const nextPlayer = activePlayers[(currentIndex + 1) % activePlayers.length];
         updates[`games/${gameId}/currentTurn`] = nextPlayer;
         
         // Reroll dice for all active players
