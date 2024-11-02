@@ -1088,3 +1088,42 @@ input:focus, select:focus {
   font-weight: 500;
   transition: all 0.2s ease;
 }
+
+/* Add these new styles for the last bid display */
+.current-bid {
+  background: #f0f7ff;
+  border: 2px solid #3949ab;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 2rem auto;
+  max-width: 400px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(57, 73, 171, 0.1);
+}
+
+.current-bid-title {
+  font-size: 1.1rem;
+  color: #3949ab;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.bid-details {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #1a237e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.bid-player {
+  font-size: 1.1rem;
+  color: #64748b;
+  margin-top: 0.5rem;
+}
+
+.bid-dice {
+  font-size: 2rem;
+}

@@ -360,7 +360,14 @@ function LiarsDiceGame({ game, gameId, playerName }) {
 
       {game.lastBid && (
         <div className="current-bid">
-          Last Bid: {game.lastBid.count} {game.lastBid.face}'s by {game.lastBid.player}
+          <div className="current-bid-title">Last Bid</div>
+          <div className="bid-details">
+            <span>{game.lastBid.count}×</span>
+            <span className="bid-dice">
+              {['⚀','⚁','⚂','⚃','⚄','⚅'][game.lastBid.face-1]}
+            </span>
+          </div>
+          <div className="bid-player">by {game.lastBid.player}</div>
         </div>
       )}
 
