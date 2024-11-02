@@ -2,6 +2,7 @@ import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Home from './pages/Home';
 import GameRoom from './pages/GameRoom';
+import Header from './components/Header';
 import './styles/index.css';
 
 function App() {
@@ -23,20 +24,7 @@ function App() {
   return (
     <Router basename="/">
       <div className="App">
-        <header className="app-header">
-          <div className="header-content">
-            <h1 onClick={() => window.location.href = '#/'} style={{ cursor: 'pointer' }}>
-              <span className="header-icon">📈</span>
-              Trading Games
-              <span className="header-subtitle">Master the Market</span>
-            </h1>
-            <nav className="nav-menu">
-              <a href="#/" className="nav-link">Dashboard</a>
-              <a href="#/leaderboard" className="nav-link">Rankings</a>
-              <a href="#/learn" className="nav-link">Learn</a>
-            </nav>
-          </div>
-        </header>
+        <Header />
         <main className="main-content">
           <Routes>
             <Route path="/" element={<Home />} />
