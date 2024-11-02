@@ -7,6 +7,7 @@ import RPSGame from '../components/games/RPSGame';
 import MultiplicationGame from '../components/games/MultiplicationGame';
 import LiarsDiceGame from '../components/games/LiarsDiceGame';
 import { rollDice } from '../utils/gameUtils';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 function GameRoom() {
   const { gameId } = useParams();
@@ -174,12 +175,7 @@ function GameRoom() {
   };
 
   if (isLoading) {
-    return (
-      <div className="loading-screen">
-        <div className="loader"></div>
-        <p>Loading game...</p>
-      </div>
-    );
+    return <LoadingSpinner message="Loading game..." />;
   }
 
   if (error) {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { update, ref } from 'firebase/database';
 import { db } from '../../firebase-config';
+import LoadingSpinner from '../LoadingSpinner';
 
 function MultiplicationGame({ game, gameId, playerName }) {
   const [settings, setSettings] = useState({
@@ -14,6 +15,7 @@ function MultiplicationGame({ game, gameId, playerName }) {
   const [gameStarted, setGameStarted] = useState(false);
   const [startTime, setStartTime] = useState(null);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
 
   const isHost = game.players[playerName]?.isHost;
 
@@ -124,31 +126,45 @@ function MultiplicationGame({ game, gameId, playerName }) {
   };
 
   const resetGame = async () => {
-    // First reset the game state in Firebase
-    const problems = generateProblems();
-    const updates = {
-      [`/games/${gameId}/problems`]: problems,
-      [`/games/${gameId}/status`]: 'waiting', // Set to waiting first
-      [`/games/${gameId}/startTime`]: null
-    };
-    
-    // Reset all players' progress
-    Object.keys(game.players).forEach(player => {
-      updates[`/games/${gameId}/players/${player}/completed`] = false;
-      updates[`/games/${gameId}/players/${player}/currentProblem`] = 0;
-      updates[`/games/${gameId}/players/${player}/finishTime`] = null;
-    });
-    
-    await update(ref(db), updates);
-
-    // Short delay to ensure all clients have processed the reset
-    setTimeout(async () => {
-      await update(ref(db), {
-        [`/games/${gameId}/status`]: 'active',
-        [`/games/${gameId}/startTime`]: Date.now()
+    try {
+      setIsLoading(true);
+      const problems = generateProblems();
+      
+      // Reset in a single transaction
+      const updates = {
+        [`/games/${gameId}/problems`]: problems,
+        [`/games/${gameId}/status`]: 'waiting',
+        [`/games/${gameId}/startTime`]: null,
+        [`/games/${gameId}/lastUpdated`]: Date.now()
+      };
+      
+      // Reset all players
+      Object.keys(game.players).forEach(player => {
+        updates[`/games/${gameId}/players/${player}/completed`] = false;
+        updates[`/games/${gameId}/players/${player}/currentProblem`] = 0;
+        updates[`/games/${gameId}/players/${player}/finishTime`] = null;
       });
-    }, 100);
+      
+      await update(ref(db), updates);
+      
+      // Start new game after a short delay
+      setTimeout(async () => {
+        await update(ref(db), {
+          [`/games/${gameId}/status`]: 'active',
+          [`/games/${gameId}/startTime`]: Date.now()
+        });
+      }, 3000);
+    } catch (error) {
+      console.error('Error resetting game:', error);
+      alert('Failed to reset game. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  if (isLoading) {
+    return <LoadingSpinner message="Setting up game..." />;
+  }
 
   if (!gameStarted && game.status === 'waiting' && game.problems) {
     return (
