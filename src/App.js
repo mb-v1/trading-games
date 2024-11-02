@@ -2,7 +2,7 @@ import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Home from './pages/Home';
 import GameRoom from './pages/GameRoom';
-import './App.css';
+import './styles/index.css';
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);

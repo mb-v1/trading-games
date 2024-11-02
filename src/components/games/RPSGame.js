@@ -72,7 +72,7 @@ function RPSGame({ game, gameId, playerName }) {
     const roundUpdates = {};
     if (result !== 'tie') {
       allPlayers.forEach(([player, data]) => {
-        const currentScore = data.score;
+        const currentScore = data.score || 0;
         roundUpdates[`/games/${gameId}/players/${player}/score`] = 
           currentScore + (player === result ? 50 : -50);
       });
