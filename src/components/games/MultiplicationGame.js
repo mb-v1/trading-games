@@ -16,6 +16,8 @@ function MultiplicationGame({ game, gameId, playerName }) {
   const [startTime, setStartTime] = useState(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [countdown, setCountdown] = useState(null);
+  const [error, setError] = useState(null);
 
   const isHost = game.players[playerName]?.isHost;
 
@@ -128,6 +130,15 @@ function MultiplicationGame({ game, gameId, playerName }) {
   const resetGame = async () => {
     try {
       setIsLoading(true);
+      setError(null);
+      
+      // Start countdown
+      setCountdown(3);
+      for (let i = 2; i >= 0; i--) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        setCountdown(i);
+      }
+
       const problems = generateProblems();
       
       // Reset in a single transaction
@@ -143,27 +154,69 @@ function MultiplicationGame({ game, gameId, playerName }) {
         updates[`/games/${gameId}/players/${player}/completed`] = false;
         updates[`/games/${gameId}/players/${player}/currentProblem`] = 0;
         updates[`/games/${gameId}/players/${player}/finishTime`] = null;
+        updates[`/games/${gameId}/players/${player}/ready`] = false;
       });
       
       await update(ref(db), updates);
       
-      // Start new game after a short delay
-      setTimeout(async () => {
-        await update(ref(db), {
-          [`/games/${gameId}/status`]: 'active',
-          [`/games/${gameId}/startTime`]: Date.now()
-        });
-      }, 3000);
+      // Short delay before starting new game
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Start new game
+      await update(ref(db), {
+        [`/games/${gameId}/status`]: 'active',
+        [`/games/${gameId}/startTime`]: Date.now()
+      });
+
     } catch (error) {
       console.error('Error resetting game:', error);
-      alert('Failed to reset game. Please try again.');
+      setError('Failed to reset game. Please try again.');
     } finally {
       setIsLoading(false);
+      setCountdown(null);
+    }
+  };
+
+  const markPlayerReady = async () => {
+    try {
+      await update(ref(db), {
+        [`/games/${gameId}/players/${playerName}/ready`]: true
+      });
+
+      // Check if all players are ready
+      const allPlayersReady = Object.values(game.players).every(player => player.ready);
+      if (allPlayersReady) {
+        await resetGame();
+      }
+    } catch (error) {
+      console.error('Error marking player ready:', error);
+      setError('Failed to mark as ready. Please try again.');
     }
   };
 
   if (isLoading) {
-    return <LoadingSpinner message="Setting up game..." />;
+    return (
+      <div className="game-loading">
+        <LoadingSpinner />
+        {countdown !== null && (
+          <div className="countdown">
+            <h2>New Game Starting in...</h2>
+            <div className="countdown-number">{countdown}</div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="error-message">
+        <p>{error}</p>
+        <button onClick={() => setError(null)} className="retry-button">
+          Try Again
+        </button>
+      </div>
+    );
   }
 
   if (!gameStarted && game.status === 'waiting' && game.problems) {

@@ -225,3 +225,64 @@
   gap: 1rem;
   margin-top: 1rem;
 }
+
+.countdown {
+  text-align: center;
+  margin: 2rem 0;
+}
+
+.countdown-number {
+  font-size: 4rem;
+  font-weight: bold;
+  color: var(--primary-color);
+  animation: pulse 1s infinite;
+}
+
+.game-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+}
+
+.host-controls {
+  margin-top: 2rem;
+  text-align: center;
+}
+
+.play-again-button {
+  background: var(--accent-color);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.play-again-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.result-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  margin: 0.5rem 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.result-card.current-player {
+  background: #f0f7ff;
+  border: 2px solid var(--primary-color);
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}

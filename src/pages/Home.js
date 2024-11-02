@@ -48,38 +48,27 @@ function Home() {
 
   const createGame = async (gameType) => {
     if (!playerName?.trim()) {
-      showToast('Please enter your name');
+      alert('Please enter your name first!');
       return;
     }
 
     setIsCreating(true);
     try {
       const gameId = uuidv4();
-      const gameRef = ref(db, `games/${gameId}`);
+      localStorage.setItem('playerName', playerName);
       
-      await set(gameRef, {
-        type: gameType,
-        status: 'waiting',
-        players: {
-          [playerName]: {
-            isHost: true,
-            ready: false,
-            score: 1000,
-            joinedAt: Date.now()
-          }
-        },
-        createdAt: Date.now(),
-        lastUpdated: Date.now(),
-        settings: {
-          maxPlayers: games.find(g => g.id === gameType).maxPlayers,
-          timeLimit: 300 // 5 minutes per game
-        }
-      });
-
-      navigate(`game/${gameId}?type=${gameType}`, { state: { playerName } });
+      // Create the full URL for sharing
+      const baseUrl = window.location.origin + window.location.pathname;
+      const gameUrl = `${baseUrl}#/game/${gameId}?type=${gameType}`;
+      
+      // Store the game URL for sharing
+      localStorage.setItem('lastGameUrl', gameUrl);
+      
+      // Navigate to the game
+      navigate(`/game/${gameId}?type=${gameType}`);
     } catch (error) {
       console.error('Error creating game:', error);
-      showToast('Failed to create game. Please try again.');
+      alert('Failed to create game. Please try again.');
     } finally {
       setIsCreating(false);
     }

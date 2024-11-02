@@ -1,80 +1,54 @@
 import { useState, useEffect } from 'react';
-import { useParams, useLocation, useSearchParams, useNavigate } from 'react-router-dom';
-import { ref, onValue, update, get, set } from 'firebase/database';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { ref, onValue, update } from 'firebase/database';
 import { db } from '../firebase-config';
 import CoinFlipGame from '../components/games/CoinFlipGame';
 import RPSGame from '../components/games/RPSGame';
 import MultiplicationGame from '../components/games/MultiplicationGame';
 import LiarsDiceGame from '../components/games/LiarsDiceGame';
-import { rollDice } from '../utils/gameUtils';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 function GameRoom() {
   const { gameId } = useParams();
-  const location = useLocation();
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [game, setGame] = useState(null);
   const [playerName, setPlayerName] = useState(() => {
-    return location.state?.playerName || localStorage.getItem('playerName') || '';
+    return localStorage.getItem('playerName') || '';
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const initializeGame = async (gameType) => {
-    try {
-      const gameRef = ref(db, `games/${gameId}`);
-      await set(gameRef, {
-        type: gameType,
-        status: 'waiting',
-        players: {},
-        roundResult: null,
-        lastUpdated: Date.now(),
-        settings: {
-          maxPlayers: getMaxPlayers(gameType),
-          timeLimit: 300
-        }
-      });
-    } catch (error) {
-      console.error('Error initializing game:', error);
-      setError('Failed to initialize game');
-      navigate('/');
-    }
-  };
-
-  const getMaxPlayers = (gameType) => {
-    const maxPlayers = {
-      coinflip: 4,
-      rps: 2,
-      multiplication: 4,
-      'liars-dice': 6
-    };
-    return maxPlayers[gameType] || 4;
-  };
-
-  const cleanupStaleGame = async () => {
-    try {
-      const gameRef = ref(db, `games/${gameId}`);
-      await set(gameRef, null);
-    } catch (error) {
-      console.error('Error cleaning up stale game:', error);
-    }
+  // Function to get game type from URL
+  const getGameType = () => {
+    const searchParams = new URLSearchParams(location.search);
+    const hashParams = new URLSearchParams(location.hash.split('?')[1] || '');
+    return searchParams.get('type') || hashParams.get('type');
   };
 
   useEffect(() => {
+    console.log('Current location:', location); // Debug log
     const gameRef = ref(db, `games/${gameId}`);
     setIsLoading(true);
-    setError(null);
 
-    const unsubscribe = onValue(gameRef, (snapshot) => {
+    const unsubscribe = onValue(gameRef, async (snapshot) => {
       const gameData = snapshot.val();
+      console.log('Game data:', gameData); // Debug log
       setIsLoading(false);
 
       if (!gameData) {
-        const gameType = searchParams.get('type');
+        const gameType = getGameType();
+        console.log('Game type from URL:', gameType); // Debug log
+
         if (gameType) {
-          initializeGame(gameType);
+          try {
+            await initializeGame(gameType);
+          } catch (error) {
+            console.error('Error initializing game:', error);
+            setError('Failed to create game');
+          }
         } else {
+          console.log('No game type found in URL'); // Debug log
           setError('Game not found');
           navigate('/');
         }
@@ -82,95 +56,59 @@ function GameRoom() {
         // Check if game is stale (older than 24 hours)
         const isStale = Date.now() - gameData.lastUpdated > 24 * 60 * 60 * 1000;
         if (isStale) {
-          cleanupStaleGame();
+          await cleanupStaleGame();
           setError('This game has expired');
           navigate('/');
           return;
         }
-
-        // Check if player was disconnected
-        if (playerName && gameData.players && !gameData.players[playerName]) {
-          setError('You were disconnected from the game');
-          navigate('/');
-          return;
-        }
-
         setGame(gameData);
       }
     }, (error) => {
-      console.error('Error loading game:', error);
+      console.error('Database error:', error); // Debug log
       setError('Failed to load game');
       setIsLoading(false);
-      navigate('/');
     });
 
-    // Cleanup function
-    return () => {
-      unsubscribe();
-      // If player is leaving, remove them from the game
-      if (playerName && game?.players?.[playerName]) {
-        handlePlayerLeave();
-      }
-    };
-  }, [gameId, searchParams]);
+    return () => unsubscribe();
+  }, [gameId, location, navigate]);
 
-  const handlePlayerLeave = async () => {
+  const initializeGame = async (gameType) => {
+    console.log('Initializing game of type:', gameType); // Debug log
+    const gameRef = ref(db, `games/${gameId}`);
+    const maxPlayers = {
+      'coinflip': 4,
+      'rps': 2,
+      'multiplication': 4,
+      'liars-dice': 6
+    }[gameType] || 4;
+
     try {
-      const updates = {};
-      updates[`/games/${gameId}/players/${playerName}`] = null;
-      updates[`/games/${gameId}/lastUpdated`] = Date.now();
-      
-      // If this was the last player, remove the game
-      const remainingPlayers = Object.keys(game.players).filter(p => p !== playerName);
-      if (remainingPlayers.length === 0) {
-        await cleanupStaleGame();
-      } else {
-        await update(ref(db), updates);
-      }
+      await update(ref(db), {
+        [`games/${gameId}`]: {
+          type: gameType,
+          status: 'waiting',
+          players: {},
+          settings: {
+            maxPlayers,
+            timeLimit: 300
+          },
+          lastUpdated: Date.now()
+        }
+      });
+      console.log('Game initialized successfully'); // Debug log
     } catch (error) {
-      console.error('Error handling player leave:', error);
+      console.error('Error in initializeGame:', error); // Debug log
+      throw error;
     }
   };
 
-  const joinGame = async () => {
-    if (!playerName?.trim()) {
-      setError('Please enter your name');
-      return;
-    }
-
-    localStorage.setItem('playerName', playerName.trim());
-
+  const cleanupStaleGame = async () => {
     try {
-      const gameRef = ref(db, `games/${gameId}`);
-      const snapshot = await get(gameRef);
-      const gameData = snapshot.val();
-
-      if (!gameData) {
-        setError('Game not found');
-        return;
-      }
-
-      if (gameData.players && Object.keys(gameData.players).length >= gameData.settings?.maxPlayers) {
-        setError('Game is full');
-        return;
-      }
-
-      const updates = {
-        [`/games/${gameId}/players/${playerName}`]: {
-          isHost: !gameData.players || Object.keys(gameData.players).length === 0,
-          ready: false,
-          dice: rollDice(5),
-          isActive: true,
-          joinedAt: Date.now()
-        },
-        [`/games/${gameId}/lastUpdated`]: Date.now()
-      };
-
-      await update(ref(db), updates);
-      setError(null);
+      await update(ref(db), {
+        [`games/${gameId}`]: null
+      });
     } catch (error) {
-      console.error('Error joining game:', error);
-      setError('Failed to join game. Please try again.');
+      console.error('Error cleaning up stale game:', error);
     }
   };
 
@@ -196,6 +134,8 @@ function GameRoom() {
     <div className="game-container">
       {!game?.players?.[playerName] && (
         <div className="join-container">
+          <h2>Join Game</h2>
+          <p>Game Type: {game?.type || getGameType()}</p>
           <input
             type="text"
             placeholder="Enter your name"
@@ -204,7 +144,24 @@ function GameRoom() {
             maxLength={20}
             className={error ? 'error' : ''}
           />
-          <button onClick={joinGame}>Join Game</button>
+          <button 
+            onClick={() => {
+              if (!playerName?.trim()) {
+                setError('Please enter your name');
+                return;
+              }
+              localStorage.setItem('playerName', playerName.trim());
+              const updates = {};
+              updates[`games/${gameId}/players/${playerName}`] = {
+                isHost: !game?.players || Object.keys(game?.players || {}).length === 0,
+                joinedAt: Date.now()
+              };
+              update(ref(db), updates);
+            }}
+            className="primary-button"
+          >
+            Join Game
+          </button>
           {error && <p className="error-text">{error}</p>}
         </div>
       )}

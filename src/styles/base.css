@@ -223,4 +223,196 @@ input:focus, select:focus {
 button.selected {
   background: #43a047;
   box-shadow: 0 4px 12px rgba(67, 160, 71, 0.2);
-} 
+}
+
+/* Add these improvements to your existing base.css */
+
+/* Smooth transitions */
+.nav-link, 
+.game-card, 
+button,
+.player-card,
+.choice-btn,
+input,
+select {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Improve mobile responsiveness */
+@media (max-width: 768px) {
+  .games-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 0.5rem;
+  }
+  
+  .header-content {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .nav-menu {
+    margin-top: 1rem;
+    justify-content: center;
+  }
+
+  .player-card {
+    padding: 1rem;
+  }
+
+  .game-controls {
+    padding: 1rem;
+    flex-direction: column;
+  }
+
+  .bid-controls {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
+
+/* Improve button accessibility */
+button:focus,
+input:focus,
+select:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Add hover effects */
+.game-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.player-card:hover {
+  background: #f8fafc;
+}
+
+/* Improve form elements */
+input,
+select {
+  padding: 0.75rem 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 1rem;
+  width: 100%;
+  max-width: 300px;
+}
+
+input:hover,
+select:hover {
+  border-color: var(--primary-color);
+}
+
+/* Add animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { 
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to { 
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Apply animations */
+.game-card,
+.player-card,
+.result-content {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Toast notifications */
+.toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--primary-color);
+  color: white;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  animation: slideUp 0.3s ease-out;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background-color: #1a1a1a;
+    --text-color: #ffffff;
+    --primary-color: #3b82f6;
+    --primary-dark: #2563eb;
+    --header-gradient: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+  }
+
+  body {
+    background: var(--background-color);
+    color: var(--text-color);
+  }
+
+  .game-card,
+  .player-card,
+  input,
+  select {
+    background: #2d2d2d;
+    border-color: #404040;
+    color: var(--text-color);
+  }
+
+  .toast {
+    background: #2d2d2d;
+  }
+}
+
+/* Accessibility improvements */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+/* Focus visible polyfill */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* Loading states */
+.loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* Error states */
+.error {
+  border-color: #dc2626 !important;
+}
+
+.error-message {
+  color: #dc2626;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}

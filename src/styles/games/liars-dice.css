@@ -1,166 +1,549 @@
 /* Liar's Dice Game Styles */
 .liars-dice-game {
-  max-width: 1200px;
+  padding: 2rem;
+  max-width: 800px;
   margin: 0 auto;
+}
+
+.game-status {
+  text-align: center;
+  margin-bottom: 2rem;
   padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .players-section {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1rem;
-  margin: 1rem 0;
+  margin-bottom: 2rem;
 }
 
 .player-card {
   background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.player-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.dice-display {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  padding: 0.5rem;
-  background: #f8fafc;
+  padding: 1rem;
   border-radius: 8px;
-  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.current-player {
+  border: 2px solid var(--primary-color);
+}
+
+.dice-section {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
 }
 
 .die {
-  font-size: 2.5rem;
-  width: 2.5rem;
-  height: 2.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 40px;
+  height: 40px;
   background: white;
   border: 2px solid #e2e8f0;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1.2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
 }
 
-.die:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+.die.hidden {
+  background: #f1f5f9;
+  color: #94a3b8;
 }
 
 .game-controls {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
   background: white;
-  padding: 1rem;
-  border-top: 1px solid #e2e8f0;
-  box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
-  z-index: 100;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .bid-controls {
   display: flex;
   gap: 1rem;
-  justify-content: center;
   align-items: center;
-  max-width: 800px;
-  margin: 0 auto;
 }
 
-.bid-controls select {
-  padding: 0.75rem;
-  border-radius: 8px;
-  border: 2px solid #e2e8f0;
-  font-size: 1rem;
-  min-width: 100px;
+.bid-input {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .bid-button, .challenge-button {
-  padding: 0.75rem 1rem;
+  padding: 0.75rem 1.5rem;
   border-radius: 8px;
-  border: none;
-  cursor: pointer;
   font-weight: 500;
   transition: all 0.2s ease;
 }
 
-.current-bid {
-  background: #f0f7ff;
-  border: 2px solid #3949ab;
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin: 2rem auto;
-  max-width: 400px;
-  text-align: center;
-  box-shadow: 0 4px 12px rgba(57, 73, 171, 0.1);
+.bid-button {
+  background: var(--primary-color);
+  color: white;
 }
 
-.current-bid-title {
-  font-size: 1.1rem;
-  color: #3949ab;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
+.challenge-button {
+  background: #dc2626;
+  color: white;
 }
 
-.bid-details {
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: #1a237e;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
+.last-bid, .challenge-result {
+  margin-top: 2rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.bid-player {
-  font-size: 1.1rem;
-  color: #64748b;
-  margin-top: 0.5rem;
+@media (max-width: 768px) {
+  .bid-controls {
+    flex-direction: column;
+  }
+  
+  .bid-input {
+    width: 100%;
+  }
 }
 
-.bid-dice {
-  font-size: 2rem;
+/* Add to your existing liars-dice.css */
+
+.bid-animation {
+  animation: bidPulse 0.5s ease-out;
 }
 
-.player-order-section {
-  background: #f8f9fa;
+.challenge-animation {
+  animation: challengeShake 0.5s ease-out;
+}
+
+.dice-reveal {
+  animation: revealDice 0.5s ease-out;
+}
+
+@keyframes bidPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+@keyframes challengeShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+@keyframes revealDice {
+  0% { 
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.game-status {
+  background: white;
   padding: 1rem;
   border-radius: 8px;
   margin: 1rem 0;
-  position: sticky;
-  top: 0;
-  z-index: 10;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.player-order-list {
+.challenge-result {
+  background: #f0f7ff;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+  animation: slideIn 0.3s ease-out;
+}
+
+.player-turn-indicator {
+  background: #10b981;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  animation: pulse 2s infinite;
+}
+
+.eliminated {
+  opacity: 0.5;
+  position: relative;
+}
+
+.eliminated::after {
+  content: 'Eliminated';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+.game-lobby {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.players-list {
+  margin: 2rem 0;
+  background: white;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.lobby-player {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.lobby-player:last-child {
+  border-bottom: none;
+}
+
+.host-badge {
+  background: #10b981;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.lobby-controls {
+  text-align: center;
+  margin: 2rem 0;
+}
+
+.start-game-button {
+  background: var(--primary-color);
+  color: white;
+  padding: 0.75rem 2rem;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.start-game-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.waiting-message {
+  color: #64748b;
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.spectator-view {
+  padding: 2rem;
+}
+
+.spectator-badge {
+  background: #f8fafc;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.share-section {
+  margin-top: 2rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.share-link {
+  display: flex;
   gap: 0.5rem;
   margin-top: 0.5rem;
 }
 
-@media (max-width: 600px) {
-  .bid-controls {
-    flex-direction: column;
-    align-items: stretch;
+.share-input {
+  flex: 1;
+  padding: 0.5rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.875rem;
+}
+
+.copy-button {
+  padding: 0.5rem 1rem;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.copy-button:hover {
+  opacity: 0.9;
+}
+
+.last-bid-container {
+  margin: 2rem 0;
+  display: flex;
+  justify-content: center;
+}
+
+.last-bid-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  width: 100%;
+  max-width: 400px;
+}
+
+.bid-header {
+  background: var(--primary-color);
+  color: white;
+  padding: 0.75rem;
+  text-align: center;
+  font-weight: 500;
+}
+
+.bid-content {
+  padding: 1.5rem;
+}
+
+.bid-player {
+  font-weight: 500;
+  margin-bottom: 1rem;
+  color: var(--primary-color);
+}
+
+.bid-details {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.bid-dice {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.bid-die {
+  background: #f8fafc;
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.bid-text {
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+
+.challenge-result-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+.challenge-result-card {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  animation: slideIn 0.3s ease;
+}
+
+.result-details {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.actual-count {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Add to your existing CSS */
+
+.all-player-dice {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.player-dice-reveal {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.player-dice-reveal .player-name {
+  font-weight: 500;
+  color: var(--primary-color);
+}
+
+.dice-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.matching-die {
+  background: #f0fdf4;
+  border-color: #10b981;
+  color: #10b981;
+  transform: scale(1.1);
+}
+
+.challenge-summary {
+  text-align: center;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 2px solid #e2e8f0;
+}
+
+.challenge-result-card {
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 2rem;
+}
+
+.challenge-result-overlay {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+@keyframes highlightDie {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1.1); }
+}
+
+.matching-die {
+  animation: highlightDie 0.5s ease forwards;
+}
+
+.game-over-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1000;
+}
+
+.game-over-card {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  animation: slideIn 0.3s ease;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.winner-announcement {
+  margin: 2rem 0;
+}
+
+.winner-announcement p {
+  color: #64748b;
+  margin-bottom: 0.5rem;
+}
+
+.winner-announcement h3 {
+  color: var(--primary-color);
+  font-size: 1.8rem;
+  margin: 0;
+}
+
+.return-home-button {
+  background: var(--primary-color);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.return-home-button:hover {
+  opacity: 0.9;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
   }
-  
-  .player-card {
-    min-width: 100%;
-  }
-  
-  .dice-display {
-    justify-content: center;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
