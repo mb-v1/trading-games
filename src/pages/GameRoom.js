@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ref, onValue, update } from 'firebase/database';
 import { db } from '../firebase-config';
-import CoinFlipGame from '../components/games/CoinFlipGame';
 import RPSGame from '../components/games/RPSGame';
 import MultiplicationGame from '../components/games/MultiplicationGame';
 import LiarsDiceGame from '../components/games/LiarsDiceGame';
@@ -76,7 +75,6 @@ function GameRoom() {
     console.log('Initializing game of type:', gameType); // Debug log
     const gameRef = ref(db, `games/${gameId}`);
     const maxPlayers = {
-      'coinflip': 4,
       'rps': 2,
       'multiplication': 4,
       'liars-dice': 6
@@ -168,9 +166,6 @@ function GameRoom() {
 
       {game?.players?.[playerName] && (
         <>
-          {game.type === 'coinflip' && (
-            <CoinFlipGame game={game} gameId={gameId} playerName={playerName} />
-          )}
           {game.type === 'rps' && (
             <RPSGame game={game} gameId={gameId} playerName={playerName} />
           )}

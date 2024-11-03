@@ -13,14 +13,6 @@ function Home() {
 
   const games = [
     {
-      id: 'coinflip',
-      title: 'Coin Flip Challenge',
-      description: 'Test your luck! Bet on heads or tails and double your coins.',
-      icon: '🎲',
-      minPlayers: 1,
-      maxPlayers: 4
-    },
-    {
       id: 'rps',
       title: 'Rock Paper Scissors',
       description: 'Classic game of strategy. Challenge other players and climb the leaderboard!',
