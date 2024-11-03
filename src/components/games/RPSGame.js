@@ -2,11 +2,20 @@ import { useState, useEffect } from 'react';
 import { update, ref, get } from 'firebase/database';
 import { db } from '../../firebase-config';
 import { determineWinner } from '../../utils/gameUtils';
+import { useNavigate } from 'react-router-dom';
+import LoadingSpinner from '../LoadingSpinner';
 
 function RPSGame({ game, gameId, playerName }) {
   const [rpsChoice, setRpsChoice] = useState(null);
   const [gameResult, setGameResult] = useState(null);
   const [showResult, setShowResult] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const navigate = useNavigate();
+
+  const isHost = game.players[playerName]?.isHost;
+  const playerCount = Object.keys(game.players || {}).length;
 
   useEffect(() => {
     if (game?.roundResult) {
@@ -17,6 +26,20 @@ function RPSGame({ game, gameId, playerName }) {
       setGameResult(null);
     }
   }, [game?.roundResult]);
+
+  useEffect(() => {
+    if (playerCount > 2) {
+      const playerJoinTime = game.players[playerName]?.joinedAt || Date.now();
+      const isLatestPlayer = Object.values(game.players).every(
+        p => (p.joinedAt || 0) <= playerJoinTime
+      );
+      
+      if (isLatestPlayer) {
+        alert('Game is full!');
+        navigate('/');
+      }
+    }
+  }, [playerCount, playerName, game.players]);
 
   const playRPSRound = async () => {
     if (!game?.players?.[playerName]) {
@@ -87,6 +110,74 @@ function RPSGame({ game, gameId, playerName }) {
     await update(ref(db), roundUpdates);
     setRpsChoice(null);
   };
+
+  const startGame = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const updates = {
+        [`/games/${gameId}/status`]: 'active',
+        [`/games/${gameId}/startTime`]: Date.now(),
+        [`/games/${gameId}/lastUpdated`]: Date.now()
+      };
+      
+      Object.keys(game.players).forEach(player => {
+        updates[`/games/${gameId}/players/${player}/choice`] = null;
+        updates[`/games/${gameId}/players/${player}/ready`] = false;
+        updates[`/games/${gameId}/players/${player}/score`] = 0;
+      });
+      
+      await update(ref(db), updates);
+    } catch (error) {
+      console.error('Error starting game:', error);
+      setError('Failed to start game. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
+    return <LoadingSpinner />;
+  }
+
+  if (!game.status || game.status === 'waiting') {
+    return (
+      <div className="rps-game">
+        <h3>Rock Paper Scissors</h3>
+        <div className="lobby-info">
+          <h4>Players in Lobby ({playerCount}/2)</h4>
+          <div className="players-grid">
+            {Object.entries(game.players).map(([name, data]) => (
+              <div key={name} className="player-card">
+                <div className="player-info">
+                  <span className="player-name">{name}</span>
+                  {data.score && <span className="player-score">{data.score} coins</span>}
+                </div>
+                {data.isHost && <span className="host-badge">Host</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        {isHost ? (
+          <button 
+            onClick={startGame} 
+            className="start-button"
+            disabled={playerCount < 2}
+          >
+            {playerCount < 2 ? 'Waiting for Players...' : 'Start Game'}
+          </button>
+        ) : (
+          <div className="waiting-message">
+            Waiting for host to start the game...
+          </div>
+        )}
+        
+        {error && <div className="error-message">{error}</div>}
+      </div>
+    );
+  }
 
   return (
     <div className="rps-game">

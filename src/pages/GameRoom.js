@@ -148,6 +148,12 @@ function GameRoom() {
                 setError('Please enter your name');
                 return;
               }
+              
+              if (game?.type === 'rps' && Object.keys(game?.players || {}).length >= 2) {
+                setError('Game is full!');
+                return;
+              }
+              
               localStorage.setItem('playerName', playerName.trim());
               const updates = {};
               updates[`games/${gameId}/players/${playerName}`] = {
