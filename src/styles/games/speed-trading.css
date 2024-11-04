@@ -253,7 +253,7 @@
   color: #dc2626;
 }
 
-// Make sure input is clearly focused
+/* Make sure input is clearly focused */
 input[type="number"]:focus {
   outline: 2px solid var(--primary-color);
   outline-offset: -1px;
