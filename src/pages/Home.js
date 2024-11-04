@@ -18,6 +18,14 @@ function Home() {
       maxPlayers: 2
     },
     {
+      id: 'speed-trading',
+      title: 'Speed Trading',
+      description: 'React fast to trading opportunities! First to grab the best trades wins.',
+      icon: '📈',
+      minPlayers: 2,
+      maxPlayers: 6
+    },
+    {
       id: 'multiplication',
       title: 'Speed Math Challenge',
       description: 'Race against others to solve multiplication problems. Test your mental math skills!',

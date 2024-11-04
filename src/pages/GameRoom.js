@@ -6,6 +6,7 @@ import RPSGame from '../components/games/RPSGame';
 import MultiplicationGame from '../components/games/MultiplicationGame';
 import LiarsDiceGame from '../components/games/LiarsDiceGame';
 import LoadingSpinner from '../components/LoadingSpinner';
+import SpeedTradingGame from '../components/games/SpeedTradingGame';
 
 function GameRoom() {
   const { gameId } = useParams();
@@ -180,6 +181,9 @@ function GameRoom() {
           )}
           {game.type === 'liars-dice' && (
             <LiarsDiceGame game={game} gameId={gameId} playerName={playerName} />
+          )}
+          {game.type === 'speed-trading' && (
+            <SpeedTradingGame game={game} gameId={gameId} playerName={playerName} />
           )}
         </>
       )}
