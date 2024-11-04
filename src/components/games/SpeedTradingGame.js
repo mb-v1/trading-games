@@ -119,11 +119,25 @@ function SpeedTradingGame({ game, gameId, playerName }) {
         });
       }
 
-      const numerator = Math.floor(Math.random() * 9) + 1;
-      const denominator = Math.floor(Math.random() * 9) + 1;
+      // Box-Muller transform for normal distribution
+      const generateNormal = (mean, stdDev) => {
+        const u1 = Math.random();
+        const u2 = Math.random();
+        const z = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
+        return mean + stdDev * z;
+      };
+
+      // Generate more varied odds (normal distribution)
+      const numerator = Math.max(1, Math.round(generateNormal(10, 5))); // mean=10, stdDev=5
+      const denominator = Math.max(1, Math.round(generateNormal(10, 5))); // mean=10, stdDev=5
       
+      // Calculate theoretical probability
       const theoreticalProbability = Math.floor((denominator / (numerator + denominator)) * 100);
-      const variation = (Math.random() * 10) - 5;
+      
+      // Add normally distributed variation (mean=0, stdDev=7.5)
+      const variation = generateNormal(0, 7.5);
+      
+      // Keep probability between 5% and 95%
       const probability = Math.max(5, Math.min(95, Math.floor(theoreticalProbability + variation)));
       
       const newTrade = {
