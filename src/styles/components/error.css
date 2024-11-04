@@ -6,7 +6,7 @@
   padding: 2rem;
 }
 
-.error-message {
+.error-container .error-message {
   background: white;
   padding: 2rem;
   border-radius: 12px;
@@ -15,21 +15,21 @@
   max-width: 400px;
 }
 
-.error-message h3 {
+.error-container .error-message h3 {
   color: #dc2626;
   margin-bottom: 1rem;
 }
 
-.error-text {
+.error-container .error-text {
   color: #dc2626;
   font-size: 0.9rem;
   margin-top: 0.5rem;
 }
 
-input.error {
+input.input-error {
   border-color: #dc2626;
 }
 
-input.error:focus {
+input.input-error:focus {
   box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
 } 

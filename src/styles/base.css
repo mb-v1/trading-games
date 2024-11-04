@@ -407,11 +407,11 @@ select:hover {
 }
 
 /* Error states */
-.error {
+.form-error {
   border-color: #dc2626 !important;
 }
 
-.error-message {
+.form-error-message {
   color: #dc2626;
   font-size: 0.875rem;
   margin-top: 0.5rem;
