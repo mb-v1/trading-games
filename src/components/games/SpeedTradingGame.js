@@ -143,7 +143,7 @@ function SpeedTradingGame({ game, gameId, playerName }) {
       const newTrade = {
         odds: `${numerator}:${denominator}`,
         probability,
-        timeLeft: gameSettings.tradeTimeout || 5,
+        timeLeft: gameSettings.tradeTimeout || 10,
         takenBy: null,
         betAmount: null,
         result: null,
@@ -395,19 +395,19 @@ function SpeedTradingGame({ game, gameId, playerName }) {
                     [`/games/${gameId}/settings/rounds`]: Number(e.target.value)
                   })}
                   min="5"
-                  max="30"
+                  max="500"
                 />
               </div>
               <div className="setting-item">
                 <label>Trade Timeout (seconds):</label>
                 <input
                   type="number"
-                  value={gameSettings.tradeTimeout || 5}
+                  value={gameSettings.tradeTimeout || 10}
                   onChange={(e) => update(ref(db), {
                     [`/games/${gameId}/settings/tradeTimeout`]: Number(e.target.value)
                   })}
                   min="3"
-                  max="10"
+                  max="20"
                 />
               </div>
               <div className="setting-item">
