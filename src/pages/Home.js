@@ -6,9 +6,6 @@ import { v4 as uuidv4 } from 'uuid';
 
 function Home() {
   const navigate = useNavigate();
-  const [playerName, setPlayerName] = useState(() => {
-    return localStorage.getItem('playerName') || '';
-  });
   const [isCreating, setIsCreating] = useState(false);
 
   const games = [
@@ -39,15 +36,9 @@ function Home() {
   ];
 
   const createGame = async (gameType) => {
-    if (!playerName?.trim()) {
-      alert('Please enter your name first!');
-      return;
-    }
-
     setIsCreating(true);
     try {
       const gameId = uuidv4();
-      localStorage.setItem('playerName', playerName);
       
       // Create the full URL for sharing
       const baseUrl = window.location.origin + window.location.pathname;
@@ -74,25 +65,8 @@ function Home() {
     setTimeout(() => toast.remove(), 3000);
   };
 
-  const handleNameChange = (e) => {
-    const newName = e.target.value;
-    setPlayerName(newName);
-    localStorage.setItem('playerName', newName);
-  };
-
   return (
     <div className="game-container fade-in">
-      <div className="join-container">
-        <input
-          type="text"
-          placeholder="Enter username"
-          value={playerName}
-          onChange={handleNameChange}
-          maxLength={20}
-          disabled={isCreating}
-          className="username-input"
-        />
-      </div>
       <div className="games-grid">
         {games.map(game => (
           <div key={game.id} className="game-card">
