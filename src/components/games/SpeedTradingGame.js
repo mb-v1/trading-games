@@ -127,18 +127,18 @@ function SpeedTradingGame({ game, gameId, playerName }) {
         return mean + stdDev * z;
       };
 
-      // Generate more varied odds (normal distribution)
-      const numerator = Math.max(1, Math.round(generateNormal(10, 5))); // mean=10, stdDev=5
-      const denominator = Math.max(1, Math.round(generateNormal(10, 5))); // mean=10, stdDev=5
+      // Generate simple odds first (1-19)
+      const numerator = Math.max(1, Math.min(19, Math.round(generateNormal(10, 4))));
+      const denominator = Math.max(1, Math.min(19, Math.round(generateNormal(10, 4))));
       
-      // Calculate theoretical probability
-      const theoreticalProbability = Math.floor((denominator / (numerator + denominator)) * 100);
+      // Calculate theoretical fair probability based on odds
+      const fairProbability = (denominator / (numerator + denominator)) * 100;
       
-      // Add normally distributed variation (mean=0, stdDev=7.5)
-      const variation = generateNormal(0, 7.5);
-      
-      // Keep probability between 5% and 95%
-      const probability = Math.max(5, Math.min(95, Math.floor(theoreticalProbability + variation)));
+      // Add some variation to create opportunities
+      // More variation (stdDev = 5) to create more interesting opportunities
+      const probability = Math.min(95, Math.max(5, 
+        Math.round(fairProbability + generateNormal(0, 5))
+      ));
       
       const newTrade = {
         odds: `${numerator}:${denominator}`,
@@ -191,7 +191,18 @@ function SpeedTradingGame({ game, gameId, playerName }) {
       const winAmount = Math.floor(won ? Number(betAmount) * (numerator / denominator) : -Number(betAmount));
       const finalAmount = Math.floor(winAmount - betFee);
 
-      // Update current trade with all information at once
+      const probability = currentTrade.probability / 100;
+      const odds = numerator / denominator;
+      
+      // Calculate EV per $1 bet (before fee)
+      const evPerDollar = (probability * odds) - (1 - probability);
+      // Calculate EV for actual bet amount (including fee)
+      const totalEV = (evPerDollar * Number(betAmount)) - betFee;
+      
+      // Calculate Kelly criterion
+      const kellyFraction = Math.max(0, (probability * (odds + 1) - 1) / odds);
+      const kellyBet = Math.floor(playerMoney * kellyFraction);
+
       const updatedTrade = {
         ...currentTrade,
         takenBy: playerName,
@@ -199,7 +210,12 @@ function SpeedTradingGame({ game, gameId, playerName }) {
         betFee: Math.floor(betFee),
         result: won ? 'win' : 'loss',
         winAmount: Math.floor(winAmount),
-        finalAmount: Math.floor(finalAmount)
+        finalAmount: Math.floor(finalAmount),
+        playerMoneyBefore: playerMoney,
+        kellyBet,
+        kellyFraction: Math.round(kellyFraction * 100) / 100,
+        evPerDollar: Math.round(evPerDollar * 100) / 100,
+        totalEV: Math.round(totalEV * 100) / 100
       };
 
       await update(ref(db), {
@@ -316,25 +332,75 @@ function SpeedTradingGame({ game, gameId, playerName }) {
         {tradeHistory.map((trade) => (
           <div key={trade.timestamp} className="history-item">
             <div className="history-header">
-              <span>Odds: {trade.odds}</span>
-              <span>Probability: {Math.floor(trade.probability)}%</span>
+              <div className="trade-odds">
+                <span className="label">Odds:</span>
+                <span className="value">{trade.odds}</span>
+              </div>
+              <div className="trade-prob">
+                <span className="label">Win Probability:</span>
+                <span className="value">{Math.floor(trade.probability)}%</span>
+              </div>
             </div>
             {trade.takenBy ? (
               <div className="history-details">
-                <div className="trade-taker">
-                  <span className="player-name">{trade.takenBy}</span>
-                  <span className="bet-amount">Bet: ${Math.floor(trade.betAmount)}</span>
+                <div className="trade-row">
+                  <div className="trade-player">
+                    <span className="label">Player:</span>
+                    <span className="value">{trade.takenBy}</span>
+                  </div>
+                  <div className="trade-balance">
+                    <span className="label">Balance:</span>
+                    <span className="value">${Math.floor(trade.playerMoneyBefore).toLocaleString()}</span>
+                  </div>
                 </div>
+
+                <div className="trade-row">
+                  <div className="trade-bet">
+                    <span className="label">Bet:</span>
+                    <span className="value">${Math.floor(trade.betAmount).toLocaleString()}</span>
+                  </div>
+                  <div className="trade-fee">
+                    <span className="label">Fee:</span>
+                    <span className="value">${Math.floor(trade.betFee).toLocaleString()}</span>
+                  </div>
+                </div>
+
+                <div className="trade-row">
+                  <div className="trade-kelly">
+                    <span className="label">Kelly Optimal:</span>
+                    <span className="value">${Math.floor(trade.kellyBet).toLocaleString()} ({trade.kellyFraction}x)</span>
+                  </div>
+                  <div className="trade-ev">
+                    <span className="label">EV:</span>
+                    <span className={`value ${trade.totalEV >= 0 ? 'positive' : 'negative'}`}>
+                      ${trade.totalEV.toLocaleString()} ({trade.evPerDollar >= 0 ? '+' : ''}{trade.evPerDollar}x per $1)
+                    </span>
+                  </div>
+                </div>
+
                 {trade.result && (
                   <div className={`trade-outcome ${trade.result}`}>
-                    {trade.result === 'win' ? 
-                      `Won $${Math.floor(trade.winAmount)} (After fee: $${Math.floor(trade.finalAmount)})` : 
-                      `Lost $${Math.floor(trade.betAmount + trade.betFee)}`}
+                    {trade.result === 'win' ? (
+                      <>
+                        <span className="label">Result:</span>
+                        <span className="value positive">
+                          +${Math.floor(trade.winAmount).toLocaleString()} 
+                          (After fee: ${Math.floor(trade.finalAmount).toLocaleString()})
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="label">Result:</span>
+                        <span className="value negative">
+                          -${Math.floor(trade.betAmount + trade.betFee).toLocaleString()}
+                        </span>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
             ) : (
-              <div className="history-expired">No one took this trade</div>
+              <div className="history-expired">Trade Expired</div>
             )}
           </div>
         ))}
@@ -450,10 +516,14 @@ function SpeedTradingGame({ game, gameId, playerName }) {
             <div key={player.name} className="standing-row">
               <span className="position">#{index + 1}</span>
               <span className="player-name">{player.name}</span>
-              <span className="final-money">${player.money}</span>
+              <span className="final-money">${Math.floor(player.money).toLocaleString()}</span>
+              <span className="trade-count">{player.trades} trades</span>
             </div>
           ))}
         </div>
+        
+        {renderTradeHistory()}
+        
         <button onClick={() => navigate('/')} className="return-home">
           Return to Home
         </button>
@@ -478,7 +548,6 @@ function SpeedTradingGame({ game, gameId, playerName }) {
       </div>
 
       {currentTrade && renderTradeCard()}
-      {renderTradeHistory()}
       {error && <div className="error-message">{error}</div>}
     </div>
   );
