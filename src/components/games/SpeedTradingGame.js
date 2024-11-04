@@ -99,11 +99,38 @@ function SpeedTradingGame({ game, gameId, playerName }) {
     }
   };
 
+  // Add this function to check viable players
+  const checkViablePlayers = async () => {
+    try {
+      const viablePlayers = Object.entries(game.players).filter(([_, data]) => {
+        return data.money >= betFee;
+      });
+
+      // If only one player can still bet, end the game
+      if (viablePlayers.length === 1) {
+        console.log('Only one player can still bet, ending game');
+        await endGame();
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error checking viable players:', error);
+      return false;
+    }
+  };
+
+  // Modify generateNewTrade to check viable players first
   const generateNewTrade = async () => {
     try {
       if ((game.currentRound || 0) >= (gameSettings.rounds || 10)) {
         console.log('Ending game - reached final round');
         await endGame();
+        return;
+      }
+
+      // Check viable players before generating new trade
+      const shouldEnd = await checkViablePlayers();
+      if (shouldEnd) {
         return;
       }
 
@@ -135,9 +162,9 @@ function SpeedTradingGame({ game, gameId, playerName }) {
       const fairProbability = (denominator / (numerator + denominator)) * 100;
       
       // Add some variation to create opportunities
-      // More variation (stdDev = 5) to create more interesting opportunities
+      // Increased stdDev to 15 and added a +5% bias to create more positive EV opportunities
       const probability = Math.min(95, Math.max(5, 
-        Math.round(fairProbability + generateNormal(0, 5))
+        Math.round(fairProbability + generateNormal(5, 15))
       ));
       
       const newTrade = {
@@ -161,6 +188,7 @@ function SpeedTradingGame({ game, gameId, playerName }) {
     }
   };
 
+  // Modify takeTrade to check viable players after each trade
   const takeTrade = async () => {
     if (!betAmount || isNaN(betAmount) || betAmount <= 0) {
       setError('Please enter a valid bet amount');
@@ -229,6 +257,13 @@ function SpeedTradingGame({ game, gameId, playerName }) {
         [`/games/${gameId}/tradeHistory/${currentTrade.timestamp}`]: updatedTrade
       });
 
+      // Check if game should end due to unviable players
+      const shouldEnd = await checkViablePlayers();
+      if (shouldEnd) {
+        return;
+      }
+
+      // Continue with normal round checking
       if ((game.currentRound || 0) >= (gameSettings.rounds || 10)) {
         console.log('Ending game after trade - final round');
         setTimeout(() => endGame(), 3000);
@@ -244,6 +279,7 @@ function SpeedTradingGame({ game, gameId, playerName }) {
     }
   };
 
+  // Modify endGame to include reason for ending
   const endGame = async () => {
     try {
       if (currentTrade) {
@@ -253,14 +289,25 @@ function SpeedTradingGame({ game, gameId, playerName }) {
       }
 
       const players = Object.entries(game.players)
-        .map(([name, data]) => ({ name, money: data.money, trades: data.trades }))
+        .map(([name, data]) => ({ 
+          name, 
+          money: data.money, 
+          trades: data.trades,
+          canStillBet: data.money >= betFee
+        }))
         .sort((a, b) => b.money - a.money);
+
+      const viablePlayers = players.filter(p => p.canStillBet);
+      const gameEndReason = viablePlayers.length === 1 
+        ? `Only ${viablePlayers[0].name} can still afford the bet fee`
+        : 'All rounds completed';
 
       console.log('Updating game status to completed');
       await update(ref(db), {
         [`/games/${gameId}/status`]: 'completed',
         [`/games/${gameId}/winner`]: players[0].name,
         [`/games/${gameId}/finalStandings`]: players,
+        [`/games/${gameId}/gameEndReason`]: gameEndReason,
         [`/games/${gameId}/currentTrade`]: null // Clear current trade
       });
     } catch (error) {
@@ -510,6 +557,11 @@ function SpeedTradingGame({ game, gameId, playerName }) {
     return (
       <div className="game-over">
         <h3>Game Over!</h3>
+        {game.gameEndReason && (
+          <div className="game-end-reason">
+            {game.gameEndReason}
+          </div>
+        )}
         <div className="final-standings">
           <h4>Final Standings</h4>
           {game.finalStandings.map((player, index) => (
@@ -518,6 +570,7 @@ function SpeedTradingGame({ game, gameId, playerName }) {
               <span className="player-name">{player.name}</span>
               <span className="final-money">${Math.floor(player.money).toLocaleString()}</span>
               <span className="trade-count">{player.trades} trades</span>
+              {!player.canStillBet && <span className="bankrupt">(Bankrupt)</span>}
             </div>
           ))}
         </div>
